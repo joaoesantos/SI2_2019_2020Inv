@@ -9,3 +9,13 @@ Um escalonamento S diz-se estrito se nenhuma das suas transações ler nem
 escrever um item escrito por outra transação ainda não terminada.
 
 SIM
+
+### b
+escritura e leitura cruzada
+T1            T2
+w(x)
+              w(y)
+              r(x)
+r(y)
+### c
+escrita cruzada

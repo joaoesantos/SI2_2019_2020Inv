@@ -1,0 +1,164 @@
+1.a)
+ALTER DATABASE <db> RECURSIVE_TRIGGERS OFF
+
+CREATE TRIGGER gte_nd ON t_NaoDocente INSTEAD OF INSERT
+AS
+BEGIN
+	BEGIN TRAN
+		DECLARE @nif int;
+		DECLARE @nbi int;
+		SELECT @nif = func_nif, @nbi = nu_bi FROM INSERTED
+		
+		IF(NOT EXISTS(SELECT 1 FROM t_Docente WHERE func_nif = @nif)
+		AND NOT EXISTS(SELECT 1 FROM t_Funcionario WHERE func_nif = @nif)
+		)
+		BEGIN
+			INSERT INTO t_Funcionario (func_nif, name) VALUES (@nif, "")
+			--inserir com nome vazio é javardo, atualiza depois o nome
+			INSERT INTO t_NaoDocente (func_nif, num_bi) VALUES (@nif, @nbi)
+		END
+		ELSE
+			print 'erro ao inserir o nao docente'
+	COMMIT
+END
+
+CREATE TRIGGER gte_d ON t_Docente INSTEAD OF INSERT
+AS
+BEGIN
+	BEGIN TRAN
+		DECLARE @nif int;
+		DECLARE @nbi int;
+		DECLARE @dept varchar(30);
+		SELECT @nif = func_nif, @nbi = num_bi, @dept = departamento FROM INSERTED
+		
+		IF(NOT EXISTS(SELECT 1 FROM t_NaoDocente WHERE func_nif = @nif)
+		AND NOT EXISTS(SELECT 1 FROM t_Funcionario WHERE func_nif = @nif)
+		)
+		BEGIN
+			INSERT INTO t_Funcionario (func_nif, name) VALUES (@nif, "")
+			--inserir com nome vazio é javardo, atualiza depois o nome
+			INSERT INTO t_Docente (func_nif, num_bi, departamento) VALUES (@nif, @nbi, @dept)
+		END
+		ELSE
+			print 'erro ao inserir o docente'
+	COMMIT
+END
+
+CREATE TRIGGER gte_func ON t_Funcionario INSTEAD OF INSERT
+AS
+BEGIN
+	print 'Nao pode inserir diretamente na tabela do funcionario'
+	--so deste modo é que consigo garantir a generalizaçao total, i.e. todos os funcionarios têm de ser cocente ou nao docente
+	COMMIT
+END
+
+1.b)
+CREATE PROC InsereDocente(@nif int, @nome varchar(50), @num int , @dept varchar(30))
+AS
+BEGIN
+	BEGIN TRY
+		INSERT INTO t_Docente (func_nif, num_bi, departamento) VALUES (@nif, @num, @dept)
+		UPDATE t_Funcionario
+		SET nome = @nome
+		WHERE func_nif = @nif
+	END TRY
+	BEGIN CATCH
+		IF XACT_STATE() <> 0 ROLLBACK TRANSACTION
+	ENd CATCH
+END
+
+1.c) nao percebi a pergunta
+
+1.d)
+O trigger AFTER so será executado após operação ter sido executada,
+o INSTEAD OF é executada em vez da operação em questão, i.e. a operação não é de todo executada, nem antes nem depois do trigger
+é em vez disso executado o codigo definido no trigger
+
+1.e)
+public void Read(int nif) {
+	using(var cn = new SQLConnection(connectionString)) {
+		SqlCommand cm = cn.createSqlCommand();
+		cm.CommandText = "SELECT f.func_nif, f.nome, d.num_mec, d.departamento FROM (t_Funcionario AS f INNER JOIN t_Docente as d ON f.func_nif = d.func_nif) WHERE f.func_nif = @nif";
+		cm.AddPArameterWithValue("@nif", nif);
+		try {
+			SqlDataReader reader = cm.ExecureReader();
+		
+			if(reader.Read()){
+				return new Docente(reader.getInt(0), reader.getString(1), reader.getInt(2), reader.getString(3))
+			}
+		} finally {
+			reader.Close();
+		}
+		
+	}
+}
+
+public void Update(Docente docente) {
+	using(var ts = new TransactionScope(TransactionOptions.Required)){
+		using(var cn = new SQLConnection(connectionString)) {
+			SqlCommand func = cn.createSqlCommand();
+			func.CommandText = "UPDATE t_Funcionario SET nome=@nome WHERE func_nif=@nif"
+			func.AddParameterWithValue("@nome", docente.Nome);
+			func.AddParameterWithValue("@nif", docente.Nif);
+			func.ExecuteNonQuery();
+			
+			SqlCommand doc = cn.createSqlCommand();
+			func.CommandText = "UPDATE t_Docente SET departamento=@dept WHERE func_nif=@nif"
+			func.AddParameterWithValue("@dept", docente.Departamento);
+			func.AddParameterWithValue("@nif", docente.Nif);
+			func.ExecuteNonQuery();
+		}
+		ts.complete();
+	}
+}
+
+1.f)
+ver resposta do qintela
+
+--------------------------------------------------------------------------------
+2.a)
+Resultado direto ver no quintela.
+Nota extra a operação I3 feita por T1 ficara bloqueada a espera que T2 termine porque os registo da tabela têm o seu lock na T2,
+pelo que a operação I3 ocorrera primeiro em T2 e so depois da T2 terminar é que T1 retomara execução executando I3.
+
+2.b)
+T1   |   T2
+B    |   
+I1   |   
+I3   |   
+C    |   
+     |   B
+     |   I2
+     |   I3
+     |   C
+
+cascadless - não contem dirty reads
+recuperável - nenhuma das transações leu um registo alterado por outra transação decorrente
+
+2.c)
+T1   |   T2
+B    |   
+I1   |   
+I3   |   
+C    |   
+     |   B
+     |   I2
+     |   I3
+     |   C
+
+estrito - nao contem dirty reads nem esmagamente de updates nao confirmados
+
+2.d)
+ver Quintela
+
+2.e)
+resultado: (1,'b'),(3,'b')
+
+read uncommitted liberta o lock de leitura imediatamente apos a leitura e os updates sao feitos as registos diferentes
+pelo que não exsitem conflitos e o resultado é igual ao da alinea a.
+
+2.f)
+ver Quintela
+
+2.g)
+ver Quintela

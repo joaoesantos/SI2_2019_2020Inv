@@ -191,7 +191,7 @@ READ COMMITTED
 Neste nível são adquiridos locks de leitura, prevenindo a ocorrência de dirty reads e de non-repetable reads 
 mas permite a ocorrência de Phantoms, pois não são adquiridos “range-locks“.
 
-R: O resultado seria o mesmo. (???)
+R: O resultado seria o mesmo. (???) em principio seria o mesmo sim
 
 (e)
 READ UNCOMMITTED

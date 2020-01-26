@@ -70,7 +70,7 @@ public Docente Read(int nif) {
 		Timeout = 5;
 	};
 
-	using(TransactionScope ts = new TransactionScope(TransactionScopeOptions.Required, options)) 
+	using(TransactionScope ts = new TransactionScope(TransactionScopeOption.Required, options)) 
 	{
 		using(SqlConnection conn = new SqlConnection(connectionString)) 
 		{
@@ -107,7 +107,7 @@ public void Update(Docente docente) {
 		Timeout = 5;
 	};
 
-	using(TransactionScope ts = new TransactionScope(TransactionScopeOptions.Required, options)) 
+	using(TransactionScope ts = new TransactionScope(TransactionScopeOption.Required, options)) 
 	{
 		using(SqlConnection conn = new SqlConnection(connectionString)) 
 		{
@@ -128,7 +128,8 @@ public void Update(Docente docente) {
 				cmd.Parameters.Add("@nif" = docente.nif);
 				cmd.ExecuteNonQuery();
 
-			} catch (Exception e)
+			} 
+			catch (Exception e)
             {
 				rollback();
             }

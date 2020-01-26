@@ -1,0 +1,19 @@
+3
+a. 
+O conceito de ran lock é utilizado para o nível de isolamento serializable, com intuito de proteger conta pahtom tuples.
+Quando uma secção da tabela tem um lock de escrita (query feita a parte da tabela), não é possivel
+inserir nem remover objetos entre os registos dessa secção.
+Em alternativa poder-se-ia por um lock na tabela toda, mas por razões de eficiencia coloca-se o lock apenas na secçao acedida.
+b.
+sim, se houver escritas a esmagar outras.
+
+Alternativa Rodri:
+Não é possivel. (slide 31)
+Como o lock de escrita existe sempre a nível do resgisto qualquer que seja o nível de isolamento, 
+o mesmo registo nao pode ser alterado por duas transação sem que uma faça commit.
+Para losta update acontecer é necessário que os updates sejam feito com base num mesmo estado anterior do registo e a atualizaçao
+de uma transação acontecer depois do commit da outra mas ainda com estado guardado inicialmente.
+
+c.
+Controlo pessimista força que apenas uma das tranações consiga alterar os registos,
+bloqueando as outras.

@@ -1,0 +1,219 @@
+- 1 -
+
+create table t_Funcionario(
+	func_nif int primary key,
+	nome varchar(50) not null
+)
+
+create table t_Docente(
+	func_nif int not null
+	references t_Funcionario,
+	num_mec int not null primary key,
+	departamento varchar(30)
+)
+
+create table t_NaoDocente(
+	func_nif int not null
+	references t_Funcionario,
+	num_bi int not null unique
+)
+
+(a)
+
+(b)
+CREATE PROCEDURE InseredDocent(@nif, @nome, @num, @dept)
+AS
+SET TRANSACTION ISOLATION LEVEL READ COMMIT
+BEGIN
+
+	IF(NOT EXISTS(SELECT func_nif FROM t_Funcionario f WHERE f.func_nif = @nif))
+	BEGIN
+		INSERT INTO t_Funcionario(func_nif, nome) VALUES (@nif, @nome)
+	END
+	
+	IF(NOT EXISTS(SELECT func_nif FROM t_Docente d WHERE d.func_nif = @nif))
+	BEGIN
+		INSERT INTO t_Docente(func_nif, num_mec, departamento VALUES (@nif, @num, @dept)
+	END
+	
+END
+
+(c)
+Não percebo a pergunta.
+
+(d)
+trigger after: são disparados após a execução de uma ação
+trigger instead of: Com gatilhos INSTEAD OF a recursão indirecta está sempre activada
+
+(e)
+
+Assumindo que: ???
+
+Class Docente {
+	public int nif { get; set; }
+	public string nome { get; set; }
+	public int numero { get; set; }
+	public string departamento { get; set; }
+
+	public Mercado (int nif, string nome, int numero, string departamento)
+	{
+		this.nif = nif;
+		this.nome = nome;
+		this.numero = numero;
+		this.departamento = departamento;
+	}
+}
+
+public Docente Read(int nif) {
+	var options = new TransactionOptions() {
+		IsolationLevel = Isolation.Level.ReadCommit;
+		Timeout = 5;
+	};
+
+	using(TransactionScope ts = new TransactionScope(TransactionScopeOptions.Required, options)) 
+	{
+		using(SqlConnection conn = new SqlConnection(connectionString)) 
+		{
+			try 
+			{
+				conn.open();
+				SqlCommand cmd = new SqlConnection(conn);
+				cmd.CommandText = "SELECT F.func_nif, F.nome, D.num_mec, D.departamento
+								FROM t_Funcionario F
+								INNER JOIN f_Docente D ON F.func_nif = D.func_nif
+								WHERE D.func_nif = @nif"
+				cmd.CommandType = CommandType.Text;
+				SqlParameter nif_p = cmd.Parameters.Add("@nif" = nif);
+
+				SqlDataReader reader = getCommand.ExecuteReader();
+				if (reader.Read())
+				{
+						Docente docente = new Mercado(reader.GetInt(0), reader.GetString(1), reader.GetInt(2), reader.GetInt(3));
+						reader.Close();
+						return docente;
+				}
+			} catch (Exception e)
+            {
+				rollback();
+            }
+		}
+	}
+}
+
+public void Update(Docente docente) {
+	var options = new TransactionOptions() 
+	{
+		IsolationLevel = Isolation.Level.ReadCommit;
+		Timeout = 5;
+	};
+
+	using(TransactionScope ts = new TransactionScope(TransactionScopeOptions.Required, options)) 
+	{
+		using(SqlConnection conn = new SqlConnection(connectionString)) 
+		{
+			try 
+			{
+				conn.open();
+				SqlCommand cmd = new SqlConnection(conn);
+
+				cmd.CommandText = "UPDATE t_Funcionario SET nome = @nome WHERE nif = @nif" 
+				cmd.CommandType = CommandType.Text;
+				cmd.Parameters.Add("@nome" = docente.nome);
+				cmd.Parameters.Add("@nif" = docente.nif);
+				cmd.ExecuteNonQuery();
+
+				cmd.CommandText = "UPDATE t_Docente SET departamento = @departamento WHERE nif = @nif" 
+				cmd.CommandType = CommandType.Text;
+				cmd.Parameters.Add("@departamento" = docente.departamento);
+				cmd.Parameters.Add("@nif" = docente.nif);
+				cmd.ExecuteNonQuery();
+
+			} catch (Exception e)
+            {
+				rollback();
+            }
+		}
+	}
+}
+
+(f)
+Proxies are necessary for two features:
+Lazy loading - navigation properties are loaded once accessed first time
+Dynamic change tracking - if you modify any property in the entity the context is notified about this change
+   and set the state of the entity. If dynamic change tracking is not used, context must use snapshot change
+   tracking which means discovery all changes before saving takes place = exploring all properties even if they were not changed.
+
+
+- 2 -
+
+(a)
+READ COMMITTED
+		T1												T2														RESULT
+		BEGIN TRAN																								
+		delete from T where t_id %2 = 0																			(1,'a'),(3,'c')
+														BEGIN TRAN
+														update T set txt = ’b’ where t_id %2 <> 0				(1,'b'),(2,'b'),(3,'b')
+		select * from T																							(1,'a'),(3,'c')
+														select * from T											(1,'b'),(2,'b'),(3,'b')
+														COMMIT
+		COMMIT
+
+values: (1,'b'),(3,'b')
+
+(b)
+Um escalonamento é recuperável se não existir nenhuma transação que faça commit tendo lido um item depois de ele ter sido escrito 
+por outra transação ainda não terminada com commit.
+
+Um escalonamento diz-se cascadeless se nenhuma das suas transações ler um item escrito por outra transação ainda não terminada
+
+READ COMMITTED
+		T1												T2														RESULT
+		BEGIN TRAN																								
+		delete from T where t_id %2 = 0
+														BEGIN TRAN
+		COMMIT
+														select * from T	
+														COMMIT
+
+(c)
+Um escalonamento diz-se estrito se nenhuma das suas transações ler nem escrever um item escrito por outra transação ainda não terminada.
+
+READ COMMITTED
+		T1												T2														RESULT
+		BEGIN TRAN																								
+		delete from T where t_id %2 = 0
+														BEGIN TRAN
+														update T set txt = ’b’ where t_id %2 <> 0
+														COMMIT
+		COMMIT
+
+(d)
+Neste nível são adquiridos locks de leitura, prevenindo a ocorrência de dirty reads e de non-repetable reads 
+mas permite a ocorrência de Phantoms, pois não são adquiridos “range-locks“.
+
+R: O resultado seria o mesmo. (???)
+
+(e)
+READ UNCOMMITTED
+		T1												T2														RESULT
+		BEGIN TRAN																								
+		select * from T
+														BEGIN TRAN
+														select * from T
+		delete from T where t_id %2 = 0
+														update T set txt = ’b’ where t_id %2 <> 0
+		COMMIT											
+														COMMIT
+
+(f)
+Como na linha 2/3 de T2 esta a ocorrer uma operação de escrita que envolve "range", a melhor forma para evitar
+a ocorrência de phantoms seria com um nível de isolamento Serializable onde todas as transacções ocorrem num meio fechado, 
+isto é, são todas executadas de modo sequencial.
+
+(g)
+Todas as queries na transação veem a mesma versão (snapshot) da base de dados, consoante o estado da BD no momento em que a transação começa. 
+Nenhum lock é adquirido nas linhas de dados subjacentes ou nas páginas de dados numa transação em modo snapshot, o que permite que outras transações 
+sejam executadas sem serem bloqueadas por uma transação anterior que ainda não tenha feito commit. As transações que modificam os dados não bloqueiam 
+as transações que lêem os dados, e as transações que lêem os dados não bloqueiam as transações que gravam dados, como normalmente ocorreriam no nível 
+de isolamento READ COMMITTED padrão no SQL Server. 
+Esse comportamento sem bloqueio também reduz significativamente a probabilidade de conflitos para transações complexas.

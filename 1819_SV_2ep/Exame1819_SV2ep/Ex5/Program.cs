@@ -24,21 +24,22 @@ namespace Ex5
             //        Console.WriteLine(Environment.NewLine);
             //    }
             //}
+            using (var ts = new TransactionScope()) {
+                using (var ctx = new Exame1819SV2epEntities()) {
+                    Console.WriteLine("5.b");
+                    veiculo v = ctx.veiculoes.First(x => x.matricula.Equals("00-ZZ-00"));
 
-            using (var ctx = new Exame1819SV2epEntities())
-            {
-                Console.WriteLine("5.b");
-                veiculo v = ctx.veiculoes.First(x => x.matricula.Equals("00-ZZ-00"));
-
-                if (v != null)
-                {
-                    v.kmActuais = 10000;
-                    ctx.SaveChanges();
+                    if (v != null)
+                    {
+                        v.kmActuais = 10000;
+                        ctx.SaveChanges();
+                    }
+                    else
+                    {
+                        Console.WriteLine("Veiculo não encontrado");
+                    }
                 }
-                else
-                {
-                    Console.WriteLine("Veiculo não encontrado");
-                }
+                ts.complete();
             }
 
            

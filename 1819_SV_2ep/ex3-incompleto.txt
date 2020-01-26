@@ -1,8 +1,0 @@
-3
-a. 
-eficiencia
-b.
-sim, se houver escritas a esmagar outras
-c.
-Controlo pessimista força que apenas uma das tranações consiga alterar os registos,
-bloqueando as outras.

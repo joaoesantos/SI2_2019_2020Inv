@@ -1,0 +1,20 @@
+public class ManutencaoMapper {
+	public void InsereManutencao(Manutencao m) {
+		using (var ts = new TransactionScope()) {
+			using (var connection = new SqlConnection(DBHelper.DbString)) {
+				connection.Open();
+					foreach (var mi in m.Itens) {
+						SqlCommand spCommand = connection.CreateCommand();
+						spCommand.CommandType = CommandType.StoredProcedure;
+						spCommand.CommandText = "insereManutencaoItem";
+						spCommand.Parameters.AddWithValue("@mat", m.Matricula);
+						spCommand.Parameters.AddWithValue("@km", mi.km);
+						spCommand.Parameters.AddWithValue("@linha", mi.NLinha);
+						spCommand.Parameters.AddWithValue("@valor", mi.Valor);
+						spCommand.ExecuteNonQuery();
+					}
+			}
+			ts.Complete();
+		}
+	}
+}

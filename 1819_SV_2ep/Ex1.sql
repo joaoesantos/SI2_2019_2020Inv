@@ -14,7 +14,7 @@ END
 GO;
 
 -- 1b
-CREATE PROC insereManutencaoItem(@mat varchar(16),@km int, @linha int, @valor NUMERIC(4,2))
+CREATE PROC insereManutencaoItem(@mat varchar(16),@km int, @dataP date, @linha int, @valor NUMERIC(4,2))
 AS
 BEGIN
     
@@ -29,25 +29,19 @@ BEGIN
     )
     BEGIN
         INSERT INTO manutencao (matricula, km, [data])
-        VALUES(@mat, @km, CONVERT(date,GETDATE()))
+        VALUES(@mat, @km, @dataP)
     END
 
     INSERT INTO manutencaoItem(matricula, km, nLinha, valor)
     VALUES(@mat, @km, @linha, @valor)
 
-    UPDATE m
-    SET
-    m.valorTotal = SOMA
-    FROM manutencao m
-    INNER JOIN 
-    (
-        -- Select rows from a Table or View '[TableOrViewName]' in schema '[dbo]'
-        SELECT matricula, km, SUM(valor) AS SOMA
-        FROM manutencaoItem mi
-        GROUP BY mi.matricula, mi.km
-    ) somatorios ON (somatorios.matricula = m.matricula AND somatorios.km = m.km)
-    WHERE m.matricula = @mat AND m.km = @km
+    DECLARE @total NUMERIC(4, 2)
+    
+    SET @total = <schema>.valorTotalManutencao(@mat, @km)
 
+    UPDATE manutencao
+    SET valorTotal = @total
+    WHERE matricula = @mat AND km = @km
 END
 GO;
 
@@ -100,25 +94,45 @@ BEGIN
 END
 go;
 
-CREATE PROC insereManutencaoItem2(@mat varchar(16),@km int, @linha int, @valor NUMERIC(4,2))
+CREATE PROC insereManutencaoItem(@mat varchar(16),@km int, @dataP date, @linha int, @valor NUMERIC(4,2))
 AS
 BEGIN
+    
+    IF(
+        NOT EXISTS(
+            SELECT 1
+            FROM
+            manutencao
+            WHERE matricula = @mat AND km = @km
+        )
+
+    )
+    BEGIN
+        INSERT INTO manutencao (matricula, km, [data])
+        VALUES(@mat, @km, @dataP)
+    END
 
     INSERT INTO manutencaoItem(matricula, km, nLinha, valor)
     VALUES(@mat, @km, @linha, @valor)
-
-    UPDATE m
-    SET
-    m.valorTotal = SOMA
-    FROM manutencao m
-    INNER JOIN 
-    (
-        -- Select rows from a Table or View '[TableOrViewName]' in schema '[dbo]'
-        SELECT matricula, km, SUM(valor) AS SOMA
-        FROM manutencaoItem mi
-        GROUP BY mi.matricula, mi.km
-    ) somatorios ON (somatorios.matricula = m.matricula AND somatorios.km = m.km)
-    WHERE m.matricula = @mat AND m.km = @km
-
 END
+
+//alternativa ao trigger, RODRIGO
+CREATE TRIGER  trg_insertManutencaoItem ON manutencaoItem AFTER INSERT
+AS
+BEGIN
+    DECLARE @mat VARCHAR(16)
+    DECLARE @km int
+    DECLARE @valor NUMERIC(4,2)
+
+    SELECT @mat = matricula, @km = km
+    FROM Inserted
+
+    SET @valor = <schema>.valorTotalManutencao(@mat, @km)
+    UPDATE manutencao
+    SET valorTotal = @valor
+    WHERE matricula = @mat AND km = @km
+END
+
+
+GO;
 GO;

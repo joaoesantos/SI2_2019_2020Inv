@@ -64,3 +64,66 @@ t1d
 t2c
 
 serializable
+
+2.b)RODRI
+READ UNCOMMITED, READ COMMITED, REPEATABLE READ, SERIALIZABLE
+(igual para todos, o lost update acontece por causa da variavel local)
+T3   |   T4
+a    |   
+b    |   
+     |   a
+     |   b
+c    |   
+d    |   
+     |   c
+     |   d
+
+(1,1)
+(2,1002)
+
+2.c)RODRI
+READ UNCOMMITED, READ COMMITED
+T3   |   T2
+a    |   
+b    |   
+     |   a
+     |   b
+c(b) |   
+d    |   
+     |   c
+
+Funciona:
+T3   |   T2
+a    |   
+b    |   
+     |   a
+     |   b
+	 |   c
+c    |   
+d    |   
+
+(1,11)
+(2,-998)
+
+REPEATABLE READ, SERIALIZABLE
+T3   |   T2
+a    |   
+b    |   
+     |   a
+     |   b(b)
+c    |   
+d    |   
+     |   c
+
+Funciona:
+T3   |   T2
+a    |   
+b    |   
+     |   a
+c    |   
+d    | 
+     |   b
+	 |   c
+
+(1,11)
+(2,-988)

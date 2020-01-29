@@ -161,7 +161,7 @@ CREATE FUNCTION top_MedicosPorFarmaco(@NumF int)
 RETURNS TABLE
 AS
 RETURN
-	SELECT DISTINCT M.CodMed, M.Nome, SUM(R.quantidade) as quantidade
+	SELECT DISTINCT TOP 10 M.CodMed, M.Nome, SUM(R.quantidade) as quantidade
 	FROM Medico M
 	INNER JOIN Consulta C ON M.CodMed = C.codMed
 	INNER JOIN Receita R ON C.NumCons = R.NumCons
@@ -181,7 +181,7 @@ Quantidade int
 AS
 BEGIN
 	insert into @medicos(CodMed, Nome, Quantidade)
-	SELECT DISTINCT M.CodMed, M.Nome, SUM(R.quantidade) as quantidade
+	SELECT DISTINCT TOP 10 M.CodMed, M.Nome, SUM(R.quantidade) as quantidade
 	FROM Medico M
 	INNER JOIN Consulta C ON M.CodMed = C.codMed
 	INNER JOIN Receita R ON C.NumCons = R.NumCons
@@ -189,11 +189,8 @@ BEGIN
 	WHERE F.NumF = @NumF
 	GROUP BY M.CodMed, M.Nome
 	ORDER BY SUM(R.quantidade) DESC
-
 	return
 end
-
-	
 
 -- testing function
 SELECT top_MedicosPorFarmaco(2)

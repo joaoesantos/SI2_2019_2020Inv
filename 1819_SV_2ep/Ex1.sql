@@ -70,11 +70,11 @@ BEGIN
     BEGIN
        
     
-        SET @total = dbo.valorTotalManutencao(@mat, @km)
+        SET @total = dbo.valorTotalManutencao(@Matricula, @KM)
 
         UPDATE manutencao
         SET valorTotal = @total
-        WHERE matricula = @mat AND km = @km
+        WHERE matricula = @Matricula AND km = @KM
 
         FETCH NEXT FROM crs_manItem   
         INTO @Matricula, @KM

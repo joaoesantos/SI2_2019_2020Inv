@@ -37,7 +37,7 @@ BEGIN
 
     DECLARE @total NUMERIC(4, 2)
     
-    SET @total = <schema>.valorTotalManutencao(@mat, @km)
+    SET @total = dbo.valorTotalManutencao(@mat, @km)
 
     UPDATE manutencao
     SET valorTotal = @total
@@ -49,44 +49,35 @@ GO;
 --1c
 CREATE TRIGGER trg_insertManutencaoItem
 ON manutencaoItem
-INSTEAD OF INSERT
+AFTER INSERT
 AS
 BEGIN
     DECLARE @Matricula VARCHAR(16)
     DECLARE @KM int
-    DECLARE @Linha int
-    DECLARE @Valor NUMERIC(4,2)
- 
+    DECLARE @total NUMERIC(4, 2)
+
     DECLARE crs_manItem CURSOR FOR
-    SELECT 
+    SELECT DISTINCT
     matricula,
-    km,
-    nLinha,
-    valor
+    km
     FROM INSERTED
 
     OPEN crs_manItem
     FETCH NEXT FROM crs_manItem   
-    INTO @Matricula, @KM, @Linha, @Valor
+    INTO @Matricula, @KM
 
     WHILE @@FETCH_STATUS = 0
     BEGIN
-        IF(
-            NOT EXISTS(
-                SELECT 1
-                FROM
-                manutencao
-                WHERE matricula = @Matricula AND km = @KM
-            )
+       
+    
+        SET @total = dbo.valorTotalManutencao(@mat, @km)
 
-        )
-        BEGIN
-            INSERT INTO manutencao (matricula, km, [data])
-            VALUES(@Matricula, @KM, CONVERT(date,GETDATE()))
-        END
-        INSERT INTO manutencaoItem(matricula, km, nLinha, valor) VALUES(@Matricula, @KM, @Linha, @Valor)
+        UPDATE manutencao
+        SET valorTotal = @total
+        WHERE matricula = @mat AND km = @km
+
         FETCH NEXT FROM crs_manItem   
-        INTO @Matricula, @KM, @Linha, @Valor
+        INTO @Matricula, @KM
     END
 
     CLOSE crs_manItem
@@ -115,9 +106,9 @@ BEGIN
     INSERT INTO manutencaoItem(matricula, km, nLinha, valor)
     VALUES(@mat, @km, @linha, @valor)
 END
-
-//alternativa ao trigger, RODRIGO
-CREATE TRIGER  trg_insertManutencaoItem ON manutencaoItem AFTER INSERT
+GO;
+--alternativa ao trigger, RODRIGO
+CREATE TRIGGER  trg_insertManutencaoItem ON manutencaoItem AFTER INSERT
 AS
 BEGIN
     DECLARE @mat VARCHAR(16)
@@ -127,7 +118,7 @@ BEGIN
     SELECT @mat = matricula, @km = km
     FROM Inserted
 
-    SET @valor = <schema>.valorTotalManutencao(@mat, @km)
+    SET @valor = dbo.valorTotalManutencao(@mat, @km)
     UPDATE manutencao
     SET valorTotal = @valor
     WHERE matricula = @mat AND km = @km

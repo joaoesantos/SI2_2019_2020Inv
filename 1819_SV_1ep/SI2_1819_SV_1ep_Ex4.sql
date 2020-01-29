@@ -70,3 +70,12 @@ return 0;
 end
 GO;
 /*--a*/
+
+/*--b*/
+/*RODRI*/
+(Slide 19 das TransaçõesII)
+Regra de visibilidade – os objectos detidos por uma transação podem ser tornados visíveis
+nas suas sub-transações. A terminação com sucesso de uma transação torna os seus
+resultados visíveis na sua transação-pai
+
+/*--b*/

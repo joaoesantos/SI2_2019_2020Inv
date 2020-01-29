@@ -1,0 +1,67 @@
+------------------------------------------------------------------------------------------------------
+Um escalonamento S é recuperável se não existir nenhuma transação que faça commit tendo lido um item 
+depois de ele ter sido escrito por outra transação ainda não terminada com commit.
+Não ser recuperável implica não ser “cascadeless” ser recuperável não implica ser “cascadeless”)
+
+Não é recuperável: 
+Sn = <r(t1,x1),w(t1,x1),r(t2,x1),r(t1,x2),w(t2,x1),c(t2),w(t1,x3),c(t1)>
+São recuperáveis: 
+Sr1 = <r(t1,x1),r(t2,x1),w(t1,x1),r(t1,x2),w(t2,x1),c(t2),w(t1,x2),c(t1)> 
+Sr2= <r(t1,x1),w(t1,x1),r(t2,x1),r(t1,x2),w(t2,x1),w(t1,x2),a(t1),a(t2)>
+------------------------------------------------------------------------------------------------------
+Um escalonamento S diz-se estrito se nenhuma das suas transações ler nem escrever um item escrito por 
+outra transação ainda não terminada.
+
+Não é estrito: 
+S1 = <r(t1,x1),w(t1,x1),r(t2,x1),r(t1,x2),w(t2,x1),c(t1),c(t2)> 
+É estrito: 
+S2 = <r(t1,x1),w(t1,x1),r(t1,x2),c(t1),r(t2,x1),w(t2,x1),c(t2)>
+
+exemplos:
+Indique um escalonamento que não seja recuperável:
+S = w(t2,x1),r(t1,x1),w(t1,x2),c(t1),w(t2,x2),c(t2)
+Indique um escalonamento que seja recuperável, mas não “cascadeless”
+S = w(t2,x1),r(t1,x1),w(t1,x2),w(t2,x2),c(t2),c(t1)
+Indique um escalonamento que seja “cascadeless”, mas não estrito.
+S1 = r(t1,x1), w(t1,x2), w(t2,x1), w(t2,x2), c(t2),c(t1)
+------------------------------------------------------------------------------------------------------
+Lista de anomalias:
+Read:
+Dirty read (W/R) 
+Ocorre quando uma transação consegue ler dados de um registo alterado por outra transação que ainda não efectuou commit.
+Non repeatable read (R/W) 
+Ocorre quando durante uma transação quando um registo é lido duas vezes e os valores diferem entre leituras.
+Phantom (R/W) 
+Ocorre quando durante diferentes leituras de uma transação existem registos novos ou removidos por outra transação.
+Write:
+Lost update (W/W)
+não é tratado como anomalia no ISO SQL Ocorre quando durante a leitura e escrita de um registo dentro
+de duas transações em concorrencia uma das actualizações se perde.
+------------------------------------------------------------------------------------------------------
+
+Níveis de isolamento
+Read Uncommitted
+Este é o primeiro e menos proibitivo nível de isolamento.
+Neste nível podem ocorrer os três fenómenos pois não é adquirido qualquer tipo de lock de dados.
+
+Read Commited
+Este nível é o usado por defeito no Oracle e no SQL Server. 
+Neste nível os Dirty Reads não ocorrem pois são usados locks partilhados que asseguram que nenhuma 
+informação corrompida ou alterada por outra transacção e que ainda não tenha sido commited é lida, 
+no entanto não assegura que os dados não vão ser alterados antes do fim da transacção, 
+permite portanto a ocorrência de non-repeatable reads.
+
+Repetable Read
+Neste nível são adquiridos locks de leitura, prevenindo a ocorrência de dirty reads e de non-repetable reads 
+mas permite a ocorrência de Phantoms, pois não são adquiridos “range-locks“.
+
+Serializable
+No nível serializable todas as transacções ocorrem num meio fechado, isto é, 
+são todas executadas de modo sequencial. O SGBD pode executar transacções concorrentemente 
+apenas se a ilusão de seruação for mantida, ou seja, se uma transacção não partilhar qualquer 
+tipo de dados com a outra. Neste nível são usados range locks, nao permitindo portanto qualquer 
+ocorrencia de pahntoms ou de outros fenomenos.
+
+
+
+

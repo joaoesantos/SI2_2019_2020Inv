@@ -21,7 +21,7 @@ create table t_NaoDocente(
 (a)
 
 (b)
-CREATE PROCEDURE InseredDocent(@nif, @nome, @num, @dept)
+CREATE PROCEDURE InseredDocente(@nif, @nome varchar(50), @num, @dept varchar(30))
 AS
 SET TRANSACTION ISOLATION LEVEL READ COMMIT
 BEGIN
@@ -55,7 +55,7 @@ Class Docente {
 	public int numero { get; set; }
 	public string departamento { get; set; }
 
-	public Mercado (int nif, string nome, int numero, string departamento)
+	public Docente (int nif, string nome, int numero, string departamento)
 	{
 		this.nif = nif;
 		this.nome = nome;
@@ -85,10 +85,10 @@ public Docente Read(int nif) {
 				cmd.CommandType = CommandType.Text;
 				SqlParameter nif_p = cmd.Parameters.Add("@nif" = nif);
 
-				SqlDataReader reader = getCommand.ExecuteReader();
+				SqlDataReader reader = cmd.ExecuteReader();
 				if (reader.Read())
 				{
-						Docente docente = new Mercado(reader.GetInt(0), reader.GetString(1), reader.GetInt(2), reader.GetInt(3));
+						Docente docente = new Docente(reader.GetInt(0), reader.GetString(1), reader.GetInt(2), reader.GetInt(3));
 						reader.Close();
 						return docente;
 				}

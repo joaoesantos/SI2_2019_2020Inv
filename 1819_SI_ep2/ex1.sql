@@ -61,8 +61,8 @@ insert into Receita(NumCons, NumF, quantidade) values
 (5, 5, 51)
 
 --(a) Implemente, utilizando T-SQL, um trigger sobre a tabela Receita que garanta que uma
---receita apenas é emitida caso haja stock suficiente para todos os fármacos prescritos. Garanta a
---consistência dos stocks guardados na base de dados.
+--receita apenas ï¿½ emitida caso haja stock suficiente para todos os fï¿½rmacos prescritos. Garanta a
+--consistï¿½ncia dos stocks guardados na base de dados.
 CREATE TRIGGER trg_InsertReceita ON Receita
 INSTEAD OF INSERT
 AS
@@ -91,7 +91,7 @@ SELECT * FROM Farmaco WHERE NumF = 2
 SELECT * FROM Receita WHERE NumF = 2
 DELETE FROM Receita WHERE NumF=2 AND NumCons=111 
 
---(b) Imagine que pretende eliminar todas as consultas referente a um médico quando este é
+--(b) Imagine que pretende eliminar todas as consultas referente a um mï¿½dico quando este ï¿½
 --eliminado.
 --i. Implemente um trigger T-SQL sobre a tabela Medico de forma a obter a funcionalidade
 --pretendida fazendo uso de cursores.
@@ -126,7 +126,7 @@ BEGIN
 END
 
 --ii. Implemente um trigger T-SQL sobre a tabela Medico de forma a obter a funcionalidade
---pretendida sem qualquer utilização de cursores.
+--pretendida sem qualquer utilizaï¿½ï¿½o de cursores.
 CREATE TRIGGER trg_ApagaConsulta ON Medico
 INSTEAD OF DELETE
 AS
@@ -151,11 +151,11 @@ SELECT * FROM Consulta WHERE codMed = 5
 DELETE FROM Medico WHERE codMed = 5
 
 
---iii. Qual dos triggers terá melhor desempenho?
+--iii. Qual dos triggers terï¿½ melhor desempenho?
 -- O cursor pode chorar no meu pau.
 
---(c) Defina a função multi-statement T-SQL top_MedicosPorFarmaco(NumF) que apresenta
---os dez médicos (Nome) que mais prescreveram o fármaco indicado e o respectivo total da quantidade
+--(c) Defina a funï¿½ï¿½o multi-statement T-SQL top_MedicosPorFarmaco(NumF) que apresenta
+--os dez mï¿½dicos (Nome) que mais prescreveram o fï¿½rmaco indicado e o respectivo total da quantidade
 --prescrita.
 CREATE FUNCTION top_MedicosPorFarmaco(@NumF int)
 RETURNS TABLE
@@ -170,11 +170,36 @@ RETURN
 	GROUP BY M.CodMed, M.Nome
 	ORDER BY SUM(R.quantidade) DESC
 
+
+---alternativa do joao como eu prefiro fazer
+CREATE FUNCTION top_MedicosPorFarmaco(@NumF int)
+RETURNS @medicos TABLE(
+CodMed int,
+Nome varchar(100),
+Quantidade int	
+)
+AS
+BEGIN
+	insert into @medicos(CodMed, Nome, Quantidade)
+	SELECT DISTINCT M.CodMed, M.Nome, SUM(R.quantidade) as quantidade
+	FROM Medico M
+	INNER JOIN Consulta C ON M.CodMed = C.codMed
+	INNER JOIN Receita R ON C.NumCons = R.NumCons
+	INNER JOIN Farmaco F ON R.NumF = F.NumF
+	WHERE F.NumF = @NumF
+	GROUP BY M.CodMed, M.Nome
+	ORDER BY SUM(R.quantidade) DESC
+
+	return
+end
+
+	
+
 -- testing function
 SELECT top_MedicosPorFarmaco(2)
 
---(d) Implemente uma vista que apresente todos os fármacos sem stock ainda não prescritos.
---Comente se a vista implementada é alterável.
+--(d) Implemente uma vista que apresente todos os fï¿½rmacos sem stock ainda nï¿½o prescritos.
+--Comente se a vista implementada ï¿½ alterï¿½vel.
 CREATE VIEW view_name AS
 SELECT F.*
 FROM Farmaco F

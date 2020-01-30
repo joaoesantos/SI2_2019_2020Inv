@@ -199,7 +199,7 @@ public class ContaMapper
 		};
         using (var ts = new TransactionScope(TransactionScopeOption.Required, options))
         {
-			Conta conta = cm.Get(num)
+			Conta conta = contaMapper.Get(num)
 			if(conta == null) return -1;
 			if(conta.saldo - valor < 0) return -2
 			conta.saldo -= valor;
@@ -218,7 +218,7 @@ public class ContaMapper
 		};
         using (var ts = new TransactionScope(TransactionScopeOption.Required, options))
         {
-			Conta conta = cm.Get(num)
+			Conta conta = contaMapper.Get(num)
 			if(conta == null) return -3;
 			conta.saldo += valor;
             contaMapper.Update(conta);

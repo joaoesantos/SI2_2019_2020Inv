@@ -51,9 +51,13 @@ REPEATABLE READ
 1 		BEGIN TRAN;
 2 												BEGIN TRAN;
 3 												SELECT * FROM Medico WHERE Nome > 5;
-4		INSERT INTO Medico VALUES(100)
-5		COMMIT
-6												COMMIT
+4 												SELECT * FROM Medico WHERE Nome < 5;
+5		INSERT INTO Medico VALUES(100)
+6		INSERT INTO Medico VALUES(1)
+7		COMMIT									
+8												SELECT * FROM Medico WHERE Nome > 5;
+9												SELECT * FROM Medico WHERE Nome < 5;
+10												COMMIT
 
 (c)
 begin tran inserirConsulta
@@ -61,13 +65,6 @@ insert into Consulta values (1, 1, ’John’, ’28-01-2019’)
 insert into Medico values (’1’, ’Andre’, ’M’, ’Neurologia’)
 commit
 
-R: Não terminaria com sucesso, porque Consulta(CodMed) é chave estrageira de Medico(Nome),
-pelo que o médico com o nome 1 teria de existir primeiro na base de dados.
-
-begin tran inserirConsulta
-if(exists(select Medico. ???????? nao faz sentido nao poder alterar a ordem
-insert into Consulta values (1, 1, ’John’, ’28-01-2019’)
-insert into Medico values (’1’, ’Andre’, ’M’, ’Neurologia’)
-commit
+R: Terminaria com sucesso, porque Consulta(CodMed) não é chave estrageira de Medico(Nome).
 
 (d)

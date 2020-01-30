@@ -82,7 +82,7 @@ BEGIN
 		INSERT INTO Receita(NumCons, NumF, quantidade) VALUES (@NumCons, @NumF, @quantidade)
 		UPDATE Farmaco SET Stock = @quantidade WHERE NumF = @NumF
 	END
-	ELSE BEGIN print 'Nao xiste stock para aviar a receita' END
+	ELSE BEGIN print 'Nao existe stock para aviar a receita' END
 END
 
 -- testing nice cursor
@@ -166,7 +166,7 @@ RETURN
 	INNER JOIN Consulta C ON M.CodMed = C.codMed
 	INNER JOIN Receita R ON C.NumCons = R.NumCons
 	INNER JOIN Farmaco F ON R.NumF = F.NumF
-	WHERE F.NumF = @NumF
+	WHERE F.NumF = 1
 	GROUP BY M.CodMed, M.Nome
 	ORDER BY SUM(R.quantidade) DESC
 
@@ -198,6 +198,7 @@ SELECT top_MedicosPorFarmaco(2)
 --(d) Implemente uma vista que apresente todos os f�rmacos sem stock ainda n�o prescritos.
 --Comente se a vista implementada � alter�vel.
 CREATE VIEW view_name AS
-SELECT F.*
+SELECT F*
 FROM Farmaco F
-WHERE F.Stock > 0
+LEFT JOIN Receita R ON R.NumF = F.NumF
+WHERE F.Stock = 0 AND R.NumCons IS NULL

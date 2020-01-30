@@ -19,6 +19,35 @@ create table t_NaoDocente(
 )
 
 (a)
+CREATE TRIGGER trg_Insert_t_Docente ON t_Docente
+AFTER INSERT
+AS
+BEGIN
+	DECLARE @nif int;
+	DECLARE @mec int;
+	SELECT @nif = func_nif, @mec = num_mec FROM INSERTED
+	IF(EXISTS(SELECT 1 FROM t_Funcionario WHERE func_nif = @nif) AND
+	NOT EXISTS(SELECT 1 FROM t_Docente WHERE func_nif = @nif) AND
+	NOT EXISTS(SELECT 1 FROM t_NaoDocente WHERE func_nif = @nif))
+	BEGIN
+		INSERT INTO t_Docente(func_nif, num_mec) VALUES(@nif, @mec)
+	END
+END
+
+CREATE TRIGGER trg_Insert_t_NaoDocente ON t_NaoDocente
+AFTER INSERT
+AS
+BEGIN
+	DECLARE @nif int;
+	DECLARE @bi int;
+	SELECT @nif = func_nif, @bi = num_bi FROM INSERTED
+	IF(EXISTS(SELECT 1 FROM t_Funcionario WHERE func_nif = @nif) AND
+	NOT EXISTS(SELECT 1 FROM t_NaoDocente WHERE func_nif = @nif) AND
+	NOT EXISTS(SELECT 1 FROM t_Docente WHERE func_nif = @nif))
+	BEGIN
+		INSERT INTO t_Docente(func_nif, num_bi) VALUES(@nif, @bi)
+	END
+END
 
 (b)
 CREATE PROCEDURE InseredDocente(@nif, @nome varchar(50), @num, @dept varchar(30))

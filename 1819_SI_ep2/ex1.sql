@@ -196,7 +196,7 @@ end
 	
 
 -- testing function
-SELECT top_MedicosPorFarmaco(2)
+SELECT * from dbo.top_MedicosPorFarmaco(2)
 
 --(d) Implemente uma vista que apresente todos os f�rmacos sem stock ainda n�o prescritos.
 --Comente se a vista implementada � alter�vel.

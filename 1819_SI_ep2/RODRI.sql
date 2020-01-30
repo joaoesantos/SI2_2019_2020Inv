@@ -86,3 +86,94 @@ end
 --1.b.iii)
 --é o que nao tem o cursor sobre a tabela da consulta, é mais eficiente deixa o SGBD fazer a query e apagar
 --todos os registos que façam match com a query do que itera-los no codigo e apagalos indevidualmente, iosto requer mais operações
+
+
+--1.c) ver o do quintela
+create function top_MedicosPorFarmaco(@NumF int) returns @medicos Table(nome varchar(100), quant int)
+as
+begin
+    declare cursor @curs for (Select TOP 10 quantidade
+    from Receita
+    where NumF = @NumF
+    order by desc quantidade)
+
+    declare @quantidade int
+    declare @NumCons int
+    declare @nome varchar(100)
+
+    FETCH NEXT FROM curs INTO @quantidade, @NumCons
+	WHILE @@FETCH_STATUS = 0
+	BEGIN
+        select @nome=med.nome
+        from consulta inner join medico as med on consulta.codMed=med.CodMed
+        where consulta.NumCons = @NumCons
+
+		insert into @medicos (nome, quant)
+        VALUES (, @quantidade)
+        FETCH NEXT FROM curs INTO @quantidade
+	end
+
+end
+--1.d)
+CREATE VIEW view_name AS
+    (select *
+    from Farmaco
+    where Stock = 0 and NumF not in (select NumF from receita) 
+
+--1.e)
+--Com virtual proxy a vida do programador fica facilitada, na medida em que alterações do modelo sao automaticament tracked pelo proxy.
+--Uma vez feitas as alterações tambem é o proxy que faz as operações diretamente a base de dados, tendo o porgramador de tratar erros
+--caso aconteçao.
+--Além disso permite tecnoicas de lazy loading que têm vantagens a nivel de performance.
+
+--1.f)
+public void carregConsultasMed(Medico med, List<Consulta> cons){
+    using(var ctx = new Entities()) {
+        ctx.Medicos.first(m => m.nome = med.nome) //assumindo que nome é id unico
+        .consultasDadas.AddRange(cons.Select(c => {
+            CONTULTA con = ctx.Consultas.create();
+            con.NumConsulta = c.NumConsulta;
+            con.CodMed = c.CodMed;
+            con.NomePaciente = c.NomePaciente;
+            con.Data = c.Data;
+        }));
+        ctx.saveChanges();
+    }
+}
+
+--2.a)
+--prints
+0
+2
+2
+
+--nao é serializavel, porque nao é equivalente a aos escalonamentos serie do pontos de vista de conflitosw
+--nao produz o mesmo resultado se estiverem em serie T2->T1 ou T1->T2 do que se estiverem como apresentados
+
+--2.b)
+--T1             |             T2
+--bt             |             
+--               |             bt
+--read * medicos |             
+--               |             insert medico
+--               |             read * medicos
+--insert medico  |             
+--               |             read * medicos (phantom)
+--read * medicos(phantom) |             
+--cm             |             
+--               |             cm
+
+--2.c)
+--nao da erro, termina com sucesso
+--apesar de consulta ter um campo que diz respeito a chave privada do medico, este campo nao é chave estrangeira
+--pelo que a consulta pode ser inserida e depois o medico
+
+--2.d)
+--Saga junta as vantagens das transações encadeadas (parcial commits) com as operações de compensação.
+--As vantagens face a uma tradicional é que sao feitos em incrementos menosres, nao tendo tanto peso do ponto
+--vista do processamenteo, menos risco de falhar e perder todo o processamento no caso de processamentos longos
+--e nao mantem locks durante tanto tempo no caso de transaçoes longas.
+--A atomicidade é garantida com as acções de compensaçao, no caso de falha de um determinado passo da saga,
+--a sua acção de compensaçao é executada, ou até todas as ações de compensação para passos ja terminados caso
+--se queira fazer "rollback" toda a saga.
+--exemplos: chora no meu pau

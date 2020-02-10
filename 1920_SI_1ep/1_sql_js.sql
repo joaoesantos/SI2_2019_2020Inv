@@ -70,7 +70,7 @@ SELECT
 con.keycol AS Keycol,
 con.tipo as Tipo,
 CASE
-when sol.num_bi2 is null then sing.num_bi
+when con.tipo = 'S' then sing.num_bi
 else sol.num_bi1 end AS Num_bi1,
 sol.num_bi2 as Num_bi2 
 FROM t_conta con

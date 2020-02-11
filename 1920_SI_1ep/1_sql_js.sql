@@ -18,17 +18,10 @@ begin try
 
     if(@num_bi1 = @num_bi2)
     begin
-        RAISERROR('o valor de @num_bi1 nao pode ser igual a @num_bi2', 15, 1)
+        RAISERROR('o valor de @num_bi1 nao pode ser igual a @num_bi2', 15, 2)
     end
 
-    if(@num_bi2 is null)
-    BEGIN
-        set @tipo = 'S'
-    end
-    ELSE
-    BEGIN
-        set @tipo = 'C'
-    END
+   
 
     if(NOT EXISTS(
         select 1
@@ -42,23 +35,26 @@ begin try
         (@keycol, @tipo)
     END
 
-    if(@tipo = 'S')
+     if(@num_bi2 is null)
     BEGIN
+        set @tipo = 'S'
         insert into t_contaSingular(keycol, num_bi)
         VALUES
         (@keycol, @num_bi1)
     end
-    else
-    begin
+    ELSE
+    BEGIN
+        set @tipo = 'C'
         insert into t_contaSolidaria(keycol, num_bi1, num_bi2)
         VALUES
         (@keycol, @num_bi1, @num_bi2)
-    end
+    END
     commit
 end TRY
 begin CATCH
-    ROLLBACK
-    SELECT ERROR_MESSAGE() AS ErrorMessage;  
+    ROLLBACK;
+    SELECT ERROR_MESSAGE() AS ErrorMessage; 
+    throw 
 end CATCH
 end
 go;
@@ -107,12 +103,12 @@ BEGIN
 
 if(@num_bi2 is null and @tipo <> 's')
 BEGIN
-    RAISERROR('Tipo incompativel', 15, 1)
+    RAISERROR('Tipo incompativel', 15, 3)
 end
 
 if(@num_bi2 is not null and @tipo <> 'C')
 BEGIN
-    RAISERROR('Tipo incompativel', 15, 1)
+    RAISERROR('Tipo incompativel', 15, 4)
 end
 
 exec InsereConta

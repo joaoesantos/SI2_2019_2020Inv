@@ -172,7 +172,7 @@ ii)REAPEATABLE READ
 Não existem conflitos entre as 2 transaçoes pelo executaram sem problemas.
 
 2.c)
-Cascadless é um escalonamento que não exibe dirty reads, que é o caso do escalonamento do 2b.
+Cascadeless é um escalonamento que não exibe dirty reads, que é o caso do escalonamento do 2b.
 Para não exibir esta propriedade o escalonamento deve exibir dirty reads, que se consegue fazer trocando a ordem de execução de T2.I2 com T3.I3.
 E ao mesmo tempo que I2 atualiza o registo com data = 'c' que é o mesmo registo que é acedido por T3.I3
 

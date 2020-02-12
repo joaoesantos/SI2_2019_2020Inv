@@ -65,13 +65,18 @@ AS
 SELECT
 con.keycol AS Keycol,
 con.tipo as Tipo,
-CASE
-when con.tipo = 'S' then sing.num_bi
-else sol.num_bi1 end AS Num_bi1,
+sing.num_bi AS Num_bi1,
+null as Num_bi2
+FROM t_conta con
+inner join t_contaSingular sing on sing.keycol = con.keycol
+union
+SELECT
+con.keycol AS Keycol,
+con.tipo as Tipo,
+sol.num_bi1 AS Num_bi1,
 sol.num_bi2 as Num_bi2 
 FROM t_conta con
-left join t_contaSingular sing on sing.keycol = con.keycol
-left join t_contaSolidaria sol on sol.keycol = con.keycol
+inner join t_contaSolidaria sol on sol.keycol = con.keycol
 GO;
 
 --1.c

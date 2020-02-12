@@ -79,3 +79,15 @@ BEGIN
     from dbo.anosSemCampeao(@a1, @a2)
 
 END
+
+--alternativa-Rodrigo
+create trigger trg_insert_campeao
+on campeoes
+before INSERT--id é chave estrangeira, tem de ser insirida primeira nas equipas
+as
+BEGIN
+    if(not exists(select id from equipas where id = -1 AND descr = '**') AND exists(select id from inserted where id = -1))
+    BEGIN
+        insert into equipas(id, descr) VALUES (-1, '**')
+    END
+end

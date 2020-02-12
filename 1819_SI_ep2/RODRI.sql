@@ -41,7 +41,7 @@ begin
 end
 
 --1.b.i)
-create trigger apagar_consultas_trg on Medico after insert
+create trigger apagar_consultas_trg on Medico instead of delete
 as
 begin
     begin tran
@@ -60,6 +60,9 @@ begin
             END
             CLOSE curs2 ;
             DEALLOCATE curs2;
+
+            DELETE FROM Medico WHERE CodMed = @codMed
+
             FETCH NEXT FROM curs into @codMed
         END
         CLOSE curs ;
@@ -144,24 +147,23 @@ public void carregConsultasMed(Medico med, List<Consulta> cons){
 --2.a)
 --prints
 0
-2
-2
+(deadlock)
 
 --nao é serializavel, porque nao é equivalente a aos escalonamentos serie do pontos de vista de conflitosw
 --nao produz o mesmo resultado se estiverem em serie T2->T1 ou T1->T2 do que se estiverem como apresentados
 
 --2.b)
---T1             |             T2
---bt             |             
---               |             bt
---read * medicos |             
---               |             insert medico
---               |             read * medicos
---insert medico  |             
---               |             read * medicos (phantom)
---read * medicos(phantom) |             
---cm             |             
---               |             cm
+--T1                                     |             T2
+--bt                                     |             
+--                                       |             bt
+--read * medicos where CodMed %2 = 0     |             
+--read * medicos where CodMed %2 <> 0    |             
+--                                       |             insert medico CodMed = <numero par>
+--                                       |             insert medico CodMed = <numero impar>
+--                                       |             cm
+--read * medicos where CodMed %2 = 0     |  (phantom tupple)           
+--read * medicos where CodMed %2 <> 0    |  (phantom tupple)           
+--cm                                     |             
 
 --2.c)
 --nao da erro, termina com sucesso

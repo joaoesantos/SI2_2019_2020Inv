@@ -1,0 +1,245 @@
+- 1 -
+
+create table equipas(
+	id int primary key, 
+	descr varchar(50) not null 
+)
+create table campeoes(
+	id int not null references equipas,
+	ano numeric(4) primary key, 
+	pontos int not null, 
+)
+
+(a)
+CREATE FUNCTION anosSemCampeao(@a1, @a2)
+RETURNS @result TABLE(ano int primary key NOT NULL)
+)
+AS
+BEGIN
+	@DECLARE @ano numeric(4) = @a1
+
+	WHILE @ano <= @a2
+	BEGIN
+		IF(NOT EXISTS(
+			SELECT E.id
+			FROM equipas E
+			WHERE E.ano = ano)
+		)
+		BEGIN
+			INSERT INTO @result(ano) VALUES (@ano)
+		END
+		SET @ano = @ano + 1
+	END
+	RETURN
+END
+
+(b)
+CREATE PROCEDURE insAnosSempCamp(@a1, @a2)
+AS
+BEGIN
+
+	IF(NOT EXISTS(SELECT E.id FROM equipas E WHERE E.id = -1)
+	BEGIN
+		INSERT INTO equipas(id, descr) VALUES (-1, '**')
+	END
+	
+	INSERT INTO campeos(id, ano, pontos)
+	-1,
+	ano,
+	0
+	FROM dbo.anosSemCampeao(@a1, @a2)
+
+END
+
+(c)
+
+
+(d)
+
+
+- 2 -
+
+
+- 3 -
+(a)
+Sim, porque um escalonamento diz-se cascadeless se nenhuma das suas transações ler um item escrito
+por outra transação ainda não terminada, e estrito quando não pode ler nem escrever. 
+Ou seja, escalonamento estrito contém  o escalonamento cascadeless
+
+Porém um escalonamento pode ser cascadeleless mas não escrito, por exemplo:
+S1 = r(t1,x1), w(t1,x2), w(t2,x1), w(t2,x2), c(t2),c(t1) 
+S2 = w(t4,x2), w(t2,x1), w(t4,x1), w(t2,x2), c(t4),c(t2)
+
+(b)
+READ COMMITTED
+		T1												T2
+		BEGIN TRAN
+														BEGIN TRAN																								
+		r(x1)
+														w(x1)
+		w(x2)
+														r(x2)
+		COMMIT											
+														COMMIT
+
+(c)
+READ UNCOMMITTED
+		T1												T2
+		BEGIN TRAN
+														BEGIN TRAN																								
+		w(x1)
+														w(x2)
+		w(x2)
+														w(x1)
+		COMMIT											
+														COMMIT
+
+- 4 -
+
+(a)
+
+create proc debitar @num int, @valor real 
+as 
+begin 
+set transaction isolation level repeatable read 
+begin tran 
+    if not exists (select * from contas where numero = @num) 
+    begin 
+        --rollback; 
+        return -1; 
+    end 
+    
+    update contas 
+    set saldo = saldo - @valor 
+    where numero = @num and saldo >= @valor 
+    
+    if @@rowcount = 0 
+    begin 
+        --rollback; 
+        return -2; 
+    end 
+
+    commit 
+    return 0 
+end
+GO;
+
+create proc creditar @num int, @valor real 
+as 
+begin 
+set transaction isolation level repeatable read 
+begin tran 
+	if not exists (select * from contas where numero = @num) 
+	begin 
+		--rollback; 
+		return -3; 
+	end 
+	update contas 
+	set saldo = saldo + @valor 
+	where numero = @num 
+
+	commit 
+	return 0 
+end
+GO;
+
+create proc transferir @num1 int, @num2 int, @valor real 
+as 
+begin 
+declare @r int 
+begin tran 
+	exec @r = debitar @num1,@valor
+
+	if @r <> 0 
+	begin 
+		rollback; 
+		return @r; 
+	end 
+		
+	exec @r = creditar @num2,@valor 
+	if @r <> 0 
+	begin 
+		rollback; 
+		return @r; 
+	end 
+
+	commit 
+	return 0; 
+end
+
+(b)
+
+
+- 5 -
+
+Assumindo que: ???
+
+Class Conta {
+	public int numero { get; set; }
+	public decimal saldo { get; set; }
+
+	public Conta (int numero, decimal saldo)
+	{
+		this.numero = numero;
+		this.saldo = saldo;
+	}
+}
+
+public class ContaMapper 
+{
+
+	private ContaMapper contaMapper = new ContaMapper();
+
+	public int Deditar(int num, decimal valor)
+	{
+		var options = new TransactionOptions() 
+		{
+			IsolationLevel = Isolation.Level.ReadCommit;
+			Timeout = 5;
+		};
+        using (var ts = new TransactionScope(TransactionScopeOption.Required, options))
+        {
+			Conta conta = contaMapper.Get(num)
+			if(conta == null) return -1;
+			if(conta.saldo - valor < 0) return -2
+			conta.saldo -= valor;
+            contaMapper.Update(conta);
+            ts.Complete()
+        };
+        return 0;
+    }
+
+	public int Creditar(int num, decimal valor)
+	{
+		var options = new TransactionOptions() 
+		{
+			IsolationLevel = Isolation.Level.ReadCommit;
+			Timeout = 5;
+		};
+        using (var ts = new TransactionScope(TransactionScopeOption.Required, options))
+        {
+			Conta conta = contaMapper.Get(num)
+			if(conta == null) return -3;
+			conta.saldo += valor;
+            contaMapper.Update(conta);
+            ts.Complete()
+        };
+        return 0;
+    }
+
+    public int Transferir(int num1, int num2, decimal valor)
+	{
+        using (var ts = new TransactionScope())
+        {
+            int resultDebitar = Debitar(num1, valor)
+            if(resultDebitar != 0) return resultDebitar;
+            
+			int resultCreditar = Creditar(num2, valor)
+            if(resultCreditar != 0) return resultCreditar;
+
+            ts.Complete();
+        };
+        return 0;
+    }
+
+}

@@ -1,0 +1,75 @@
+2.
+create table zt(z_id primary key, data nvarchar(10) null)
+
+insert into zt(zt_id, data)
+values(-1,'a'),(-2,'b'),(3,'c')
+
+
+delete from zt where zt_id <= 0 --I1
+update zt set data = 'c' where data = 'b' --I2
+select zt_id from zt where zt_id > 0 --I3
+
+rollback --I4
+commit --I5
+
+--I6
+set tran isolation level ?
+begin tran
+a)
+T1                                              T2
+set tran isolation level ?
+begin tran
+                                                set tran isolation level ?
+                                                begin tran
+delete from zt where zt_id <= 0
+                                                update zt set data = 'c' where data = 'b'
+commit
+                                                rollback
+
+Com read uncommitted
+T1 ao apagar o registo vai ficar o exclusive lock, bloqueando T2 quando esta tentar fazer o update, este lock é libertado quando T1 faz commit.
+Assim sendo os restante valores que verifiquem a condição de I2 são alterados.
+(3,'c')
+
+com read committed o resultado não se altera pois não há leituras nestes processamentos
+
+The exclusive lock will be imposed by the transaction when it wants to modify the page or row data,
+ which is in the case of DML statements DELETE, INSERT and UPDATE. 
+ An exclusive lock can be imposed to a page or row only if there is no other shared or exclusive lock imposed already on the target. 
+ This practically means that only one exclusive lock can be imposed to a page or row, and once imposed no other lock can be imposed on locked resources
+ 
+ b)
+ <t2.i6, t3-i6, t3.i3, t2.i2, t2.i4, t3.i5>
+
+ T2                                             t3
+set tran isolation level ?
+begin tran
+                                                set tran isolation level ?
+                                                begin tran
+
+                                                select zt_id from zt where zt_id > 0 --I3
+update zt set data = 'c' where data = 'b' --I2
+rollback
+                                                commit
+
+read committed
+nao existem conflitos entre as transacoes
+(-1,'a'),(-2,'c'),(3,'c')
+
+repeatable read
+nao existem conflitos entre as transacoes
+(-1,'a'),(-2,'c'),(3,'c')
+
+c) O escalonamento tem de ser alterado para nao ser cascadeless
+ T2                                             t3
+set tran isolation level ?
+begin tran
+                                                set tran isolation level ?
+                                                begin tran
+
+update zt set data = 'c' where data = 'b' --I2
+                                                select zt_id from zt where zt_id > 0 --I3
+rollback
+                                                commit
+
+d)

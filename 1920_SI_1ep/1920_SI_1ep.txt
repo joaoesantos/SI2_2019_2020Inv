@@ -1,0 +1,197 @@
+1.a)
+
+CREATE PROC InsereConta(@keycol int, @num_bi1 int, @num_bi2 int)
+AS
+BEGIN
+	BEGIN TRY
+		DECLARE @tipo char
+	
+		IF(@num_bi1 IS NULL)-- é assim que se compara com NULL
+		BEGIN
+			RAISERROR('num_bi1 tem de estar preenchido.', 16, 1)
+		END
+		IF(@num_bi1 = @num_bi2)-- é assim que se compara com NULL
+		BEGIN
+			RAISERROR('num_bi1 e num_bi2 têm de ser diferentes.', 16, 2)
+		END
+		IF(NOT EXISTS(SELECT * FROM t_titual WHERE num_bi = @num_bi1))
+		BEGIN
+			RAISERROR('Não exist titular com num_bi1', 16, 3)
+		END
+		IF(@num_bi2 IS NULL)
+		BEGIN
+			@tipo = 's'
+			INSERT INTO t_Conta (keycol, tipo) VALUES (@keycol, @tipo)
+			INSERT INTO t_contaSingular (keycol, num_bi) VALUES (@keycol, @num_bi1)
+		END
+		ELSE
+		BEGIN
+			IF(NOT EXISTS(SELECT * FROM t_titual WHERE num_bi = @num_bi2))
+			BEGIN
+				RAISERROR('Não exist titular com num_bi2', 16, 4)
+			END
+			@tipo = 'c'
+			INSERT INTO t_Conta (keycol, tipo) VALUES (@keycol, @tipo)
+			INSERT INTO t_contaSolidaria (keycol, num_bi1, num_bi2) VALUES (@keycol, @num_bi1, @num_bi2)
+		END
+		
+	
+		
+	
+		COMMIT TRANSACTION
+	END TRY
+	BEGIN CATCH
+		PRINT ERROR_MESSAGE()
+		ROLLBACK TRANSACTION
+		THROW; --nao tenho a certeza
+	END CATCH
+END
+
+1.b)--corrige JOAO
+CREATE VIEW v_contas 
+AS
+	SELECT c.keycol, c.tipo, IF(csi.num_bi1 IS NOT NULL) csi.num_bi ELSE cso.num_bi1, cso.num_bi2
+	FROM t_conta AS c 
+	LEFT JOIN t_contaSingular AS csi WHERE c.keycol = csi.keycol
+	LEFT JOIN t_contaSolidaria AS cso WHERE c.keycol = cso.keycol
+	
+
+1.c)
+CREATE TRIGGER t_v_contas INSTEAD OF INSERT ON v_contas
+AS
+BEGIN
+	BEGIN TRY
+		DECLARE @keycol int
+		DECLARE @tipo char
+		DECLARE @titular1 int
+		DECLARE @titular2 int
+		DECLARE @curs CURSOR FOR SELECT keycol, tipo, titular1, titular2 FROM Inserted
+		FETCH FROM curs INTO @keycol, @tipo, @titular1, @titular2
+		WHILE(@@FETCHSTATUS=0)
+		BEGIN
+			IF(@tipo = 'C' AND @titular2 IS NULL)
+			BEGIN
+				RAISERROR('Conta solidaria tem de ter num_bi2', 16, 5)
+			END
+			IF(@tipo = 'S' AND @titular2 IS NOT NULL)
+			BEGIN
+				RAISERROR('Conta singular nao pode ter num_bi2', 16, 6)
+			END
+			EXEC InsereConta @keycol @titular1 @titular2
+			FETCH FROM curs INTO @keycol, @tipo, @titular1, @titular2
+		END
+		ALTER VIEW v_contas
+		AS
+			SELECT c.keycol, c.tipo, IF(csi.num_bi1 IS NOT NULL) csi.num_bi ELSE cso.num_bi1, cso.num_bi2
+			FROM t_conta AS c 
+			LEFT JOIN t_contaSingular AS csi WHERE c.keycol = csi.keycol
+			LEFT JOIN t_contaSolidaria AS cso WHERE c.keycol = cso.keycol
+	END TRY
+	BEGIN CATCH
+		PRINT ERROR_MESSAGE()
+		THROW; --nao tenho a certeza
+	END CATCH
+	
+END
+
+1.d)
+public interface IContaSingular {
+	public int KeyCol {get; set;}
+	public char Tipo {get; set;}
+	public int NumBi1 {get; set;}
+	public Titular TitularPrincipal {get; set;}
+}
+
+1.e)
+
+public class ContaSingular : IContaSingular {
+	public ContaSingular(string cs) {
+		this.ConnectionString = cs;
+	}
+
+	internal Titular TitularPrincipalInternal;
+	public override Titular TitularPrincipal {
+        get {
+			if(TitularPrincipalInternal == null) {
+				this.TitularPrincipalInternal = new TitularMapper(this.ConnectionString).Read(this.NumBi1);
+			}
+			return this.TitularPrincipalInternal;
+		}
+    }
+}
+
+1.f)
+
+public ContaSingular Read(int id) {
+	using (var conn = new SqlConnection(this.ConnectionString)) {
+		SqlCommand cmd = conn.CreateCommand();
+		cmd.CommandText = "SELECT keycol, tipo, titular1 FROM v_contas WHERE keycol = @keycol";
+		cmd.Parameters.addWithValue("@keycol", id);
+		SqlDataReader read = cmd.ExecuteReader();
+		if(read.Read()){
+			ContaSingular conta = new ContaSingular{KeyCol = read.getInt32(0), Tipo = read.getChar(1), NumBi1 = read.getInt32(2)};
+			read.Close()
+			return conta;
+		}
+	}
+}
+
+
+2.a)
+T1                                      |   T2
+I6 - begin                              |   
+                                        |   I6 - Begin
+I1 - delete from ZT where zt_id <= 0    |   
+                                        |   I2 - update ZT set data = 'c' where data = 'b'
+I5 - commit                             |   
+                                        |   I4 - rollback
+
+i)READ UNCOMMITED
+(3, 'c')
+Não existem conflitos entre as 2 transaçoes pelo executaram sem problemas. Com isto em mento a T1 remove 2 registos e a T2 como tem rollback não afeta registo nenhum.
+
+ii)READ COMMITED
+(3, 'c')
+Não existem conflitos entre as 2 transaçoes pelo executaram sem problemas. Com isto em mento a T1 remove 2 registos e a T2 como tem rollback não afeta registo nenhum.
+
+2.b)
+T2                                              |   T3
+I6 - begin                                      |   
+                                                |   I6 - Begin
+                                                |   I3 - select zt_id from ZT where zt_id > 0
+I2 - update ZT set data = 'c' where data = 'b'  |   
+I4 - rollback                                   |   
+                                                |   I5 - commit
+
+i)READ COMMITED
+(-1, 'a'), (-2, 'b'), (3, 'c')
+Não existem conflitos entre as 2 transaçoes pelo executaram sem problemas.
+
+ii)REAPEATABLE READ
+(-1, 'a'), (-2, 'b'), (3, 'c')
+Não existem conflitos entre as 2 transaçoes pelo executaram sem problemas.
+
+2.c)
+Cascadeless é um escalonamento que não exibe dirty reads, que é o caso do escalonamento do 2b.
+Para não exibir esta propriedade o escalonamento deve exibir dirty reads, que se consegue fazer trocando a ordem de execução de T2.I2 com T3.I3.
+E ao mesmo tempo que I2 atualiza o registo com data = 'c' que é o mesmo registo que é acedido por T3.I3
+
+T2                                              |   T3
+I6 - begin                                      |
+                                                |   I6 - Begin
+I2 - update ZT set data = 'b' where data = 'c'  |
+                                                |   I3 - select zt_id from ZT where zt_id > 0
+I4 - rollback                                   |
+                                                |   I5 - commit
+
+2.d)
+
+
+2.e)
+
+
+2.f)
+
+
+2.g)
+

@@ -1,0 +1,239 @@
+1.
+create table t_Funcionario(
+func_nif int primary key,
+nome varchar(50) not null
+)
+
+create table t_Docente(
+func_nif int not null
+references t_Funcionario,
+num_mec int not null primary key,
+departamento varchar(30)
+
+create table t_NaoDocente(
+func_nif int not null
+references t_Funcionario,
+num_bi int not null unique
+)
+
+a)
+
+Create trigger trg_insertDocente
+on t_Docente
+instead of insert
+as
+begin
+    declare @nif int
+    declare @departamento varchar(30)
+    declare @num_mec int
+
+    declare docente_cursor cursor for 
+    select func_nif, num_mec, departamento
+    from inserted
+
+    open docente_cursor
+    fetch next from docente_cursor into @nif,@num_mec,@departamento
+
+    while @@fetch_STATUS = 0
+    begin
+        if(not exists(
+            select 1 
+            from t_NaoDocente 
+            where func_nif = @nif
+            ) and
+            not exists(
+                select 1
+                from t_Funcionario
+                where func_nif = @nif
+            )
+        )
+        begin
+            insert into t_Funcionario(func_nif, nome) values (@nif, '')
+            insert into t_Docente(func_nif, num_mec, departamento) values(@nif, @num_mec, @departamento)
+        end
+        else
+        begin
+            raiseerror(
+                N'Erro ao inserir docente com o nif %d',
+                15,
+                1,
+                @nif
+            )
+        end
+        fetch next from docente_cursor into @nif,@num_mec,@departamento
+
+    end
+    close docente_cursor
+    deallocate docente_cursor
+end
+
+Create trigger trg_insertNaoDocente
+on t_NaoDocente
+instead of insert
+as
+begin
+    declare @nif int
+    declare @num_bi int
+
+    declare naodocente_cursor cursor for 
+    select func_nif, num_bi
+    from inserted
+
+    open naodocente_cursor
+    fetch next from naodocente_cursor into @nif,@num_bi
+
+    while @@fetch_STATUS = 0
+    begin
+        if(not exists(
+            select 1 
+            from t_Docente 
+            where func_nif = @nif
+            ) and
+            not exists(
+                select 1
+                from t_Funcionario
+                where func_nif = @nif
+            )
+        )
+        begin
+            insert into t_Funcionario(func_nif, nome) values (@nif, '')
+            insert into t_NaoDocente(func_nif, num_bi) values(@nif, @num_bi)
+        end
+        else
+        begin
+            raiseerror(
+                N'Erro ao inserir nao docente com o nif %d',
+                15,
+                1,
+                @nif
+            )
+        end
+        fetch next from naodocente_cursor into @nif,@num_bi
+
+    end
+    close naodocente_cursor
+    deallocate naodocente_cursor
+end
+
+b)
+
+create procedure InsereDocente(@nif, @nome, @num,@dept)
+as
+begin
+begin try
+    begin tran
+    insert into t_Docente(func_nif, num_mec, departamento) values(@nif, @num, @dept)
+
+    update t_Funcionario
+    set
+    nome = @nome
+    where func_nif = @nif
+
+    commit
+end try
+begin catch
+    rollback
+end catch
+end
+
+c)
+nao faço puto de ideia
+
+d)
+num trigger after, o codigo corre depois da ação ter corrido
+num trigger after, o codigo corre em vez da ação que o despoletou
+
+e)
+
+public void Update(Docente docente){
+    using(var ts = new TransactionScope()){
+        using(var con = new SqlConnection("ConnectionString")){
+            con.open();
+
+            SqlCommand command1 = con.CreateCommand();
+
+            command1.CommandType = CommandType.Text;
+            command1.Text = "Update t_Funcionario set nome = @nome where func_nif = @nif"
+
+            command1.Parameters.AddWithValue("@nome", docente.nome);
+            command1.Parameters.AddWithValue("@nif", docente.Nif)
+            command1.ExecuteNonQuery();
+
+            SqlCommand command2 = con.CreateCommand();
+
+            command2.CommandType = CommandType.Text;
+            command2.Text = "Update t_Docente set num_mec = @num, departamento = @departamento where func_nif = @nif";
+
+            command2.Parameters.AddWithValue("@num", docente.Numero);
+            command2.Parameters.AddWithValue("@departamento, docente.Departamento");
+            command2.Parameters.AddWithValue("@nif", docente.Nif);
+
+            command1.ExecuteNonQuery();
+
+        }
+        ts.Complete();
+    }
+}
+
+public Docente Read(int nif){
+    using(var ts = new TransactionScope()){
+        using(var conn = new SqlConnection("ConnectionString")){
+            SqlCommand command = conn.CreateCommand();
+            command.CommandType = CommandType.Text;
+            command.Text = "Select f.nome, d.departamento, d.num_mec from t_Docente d inner join t_Funcionario f on f.func_nif = d.func_nif where d.func_nif = @nif";
+
+            command.AddWithValue("@nif", nif);
+            using(var reader = command.ExecuteReader()){
+                if(reader.Read()){
+                    Docente docente = new Docente(nif, reader.GetInt(0), reader.GetInt(2), reader.GetString(1));
+                    return docente;
+                }else{
+                    throw new InvalidArgumentException("Docente nao encontrado");
+                }
+            }
+        }
+    }
+}
+
+f)
+---resposta quintela
+
+2.
+a)
+create table T
+(
+t_id int primary key,
+txt varchar(100) unique null
+);
+insert into T(t_id,txt)
+values(1,’a’),(2,’b’),(3,’c’);
+
+--Instrucao I1 
+delete from T where t_id %2 = 0 
+
+--Instrucao I2 
+update T set txt = ’b’ where t_id %2 <> 0 
+
+--Instrucao I3 
+select * from T
+
+T1.BEGIN TRAN, T1.I1, T2.BEGIN TRAN, T2.I2, T1.I3, T2.I3, T2.COMMIT, T1.COMMIT .
+
+(1,’b’),(3,’b’);
+(1,’b’),(3,’b’);
+
+
+b)
+T1.BEGIN TRAN, T1.I1, T2.BEGIN TRAN, T2.I2, T1.I3, T2.I3, T1.COMMIT, T2.COMMIT
+
+c)
+
+T1.BEGIN TRAN , T1.I3 , T2.BEGIN TRAN, T1.I1, T1.COMMIT, T2.I2, T2.I3, T2.COMMIT
+
+d)
+O resultado seria o mesmo, dado que T2 continua com o Exclusive Lock dos registos da tabela
+
+e)
+T1.BEGIN TRAN, T1.I3, T2.BEGIN TRAN, T2.I3, T1.I1, T2.I2, T1.COMMIT, T2.COMMIT .
+(1,’a’),(2,’b’),(3,’c’)
+(1,’a’),(2,’b’),(3,’c’)

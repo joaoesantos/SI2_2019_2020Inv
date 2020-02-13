@@ -1,0 +1,241 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<edmx:Edmx Version="3.0" xmlns:edmx="http://schemas.microsoft.com/ado/2009/11/edmx">
+  <!-- EF Runtime content -->
+  <edmx:Runtime>
+    <!-- SSDL content -->
+    <edmx:StorageModels>
+      <Schema Namespace="TrabalhoSi2Model.Store" Provider="System.Data.SqlClient" ProviderManifestToken="2012" Alias="Self" xmlns:store="http://schemas.microsoft.com/ado/2007/12/edm/EntityStoreSchemaGenerator" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm/ssdl">
+        <EntityType Name="manutencao">
+          <Key>
+            <PropertyRef Name="matricula" />
+            <PropertyRef Name="km" />
+          </Key>
+          <Property Name="matricula" Type="varchar" MaxLength="16" Nullable="false" />
+          <Property Name="km" Type="int" Nullable="false" />
+          <Property Name="valorTotal" Type="numeric" Precision="4" Scale="2" />
+          <Property Name="data" Type="date" Nullable="false" />
+        </EntityType>
+        <EntityType Name="manutencaoItem">
+          <Key>
+            <PropertyRef Name="matricula" />
+            <PropertyRef Name="km" />
+            <PropertyRef Name="nLinha" />
+          </Key>
+          <Property Name="matricula" Type="varchar" MaxLength="16" Nullable="false" />
+          <Property Name="km" Type="int" Nullable="false" />
+          <Property Name="nLinha" Type="int" Nullable="false" />
+          <Property Name="valor" Type="numeric" Precision="4" Scale="2" Nullable="false" />
+        </EntityType>
+        <EntityType Name="veiculo">
+          <Key>
+            <PropertyRef Name="matricula" />
+          </Key>
+          <Property Name="matricula" Type="varchar" MaxLength="16" Nullable="false" />
+          <Property Name="kmActuais" Type="int" />
+          <Property Name="descr" Type="varchar" MaxLength="255" Nullable="false" />
+        </EntityType>
+        <Association Name="FK__manutenca__matri__57BF7258">
+          <End Role="veiculo" Type="Self.veiculo" Multiplicity="1" />
+          <End Role="manutencao" Type="Self.manutencao" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="veiculo">
+              <PropertyRef Name="matricula" />
+            </Principal>
+            <Dependent Role="manutencao">
+              <PropertyRef Name="matricula" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__manutencaoItem__5B90033C">
+          <End Role="manutencao" Type="Self.manutencao" Multiplicity="1" />
+          <End Role="manutencaoItem" Type="Self.manutencaoItem" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="manutencao">
+              <PropertyRef Name="matricula" />
+              <PropertyRef Name="km" />
+            </Principal>
+            <Dependent Role="manutencaoItem">
+              <PropertyRef Name="matricula" />
+              <PropertyRef Name="km" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Function Name="insereManutencaoItem" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="mat" Type="varchar" Mode="In" />
+          <Parameter Name="km" Type="int" Mode="In" />
+          <Parameter Name="linha" Type="int" Mode="In" />
+          <Parameter Name="valor" Type="numeric" Mode="In" />
+        </Function>
+        <Function Name="insereManutencaoItem2" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="false" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo">
+          <Parameter Name="mat" Type="varchar" Mode="In" />
+          <Parameter Name="km" Type="int" Mode="In" />
+          <Parameter Name="linha" Type="int" Mode="In" />
+          <Parameter Name="valor" Type="numeric" Mode="In" />
+        </Function>
+        <Function Name="valorTotalManutencao" Aggregate="false" BuiltIn="false" NiladicFunction="false" IsComposable="true" ParameterTypeSemantics="AllowImplicitConversion" Schema="dbo" ReturnType="money">
+          <Parameter Name="matricula" Type="varchar" Mode="In" />
+          <Parameter Name="km" Type="int" Mode="In" />
+        </Function>
+        <EntityContainer Name="TrabalhoSi2ModelStoreContainer">
+          <EntitySet Name="manutencao" EntityType="Self.manutencao" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="manutencaoItem" EntityType="Self.manutencaoItem" Schema="dbo" store:Type="Tables" />
+          <EntitySet Name="veiculo" EntityType="Self.veiculo" Schema="dbo" store:Type="Tables" />
+          <AssociationSet Name="FK__manutenca__matri__57BF7258" Association="Self.FK__manutenca__matri__57BF7258">
+            <End Role="veiculo" EntitySet="veiculo" />
+            <End Role="manutencao" EntitySet="manutencao" />
+          </AssociationSet>
+          <AssociationSet Name="FK__manutencaoItem__5B90033C" Association="Self.FK__manutencaoItem__5B90033C">
+            <End Role="manutencao" EntitySet="manutencao" />
+            <End Role="manutencaoItem" EntitySet="manutencaoItem" />
+          </AssociationSet>
+        </EntityContainer>
+      </Schema>
+    </edmx:StorageModels>
+    <!-- CSDL content -->
+    <edmx:ConceptualModels>
+      <Schema Namespace="TrabalhoSi2Model" Alias="Self" annotation:UseStrongSpatialTypes="false" xmlns:annotation="http://schemas.microsoft.com/ado/2009/02/edm/annotation" xmlns:customannotation="http://schemas.microsoft.com/ado/2013/11/edm/customannotation" xmlns="http://schemas.microsoft.com/ado/2009/11/edm">
+        <EntityType Name="manutencao">
+          <Key>
+            <PropertyRef Name="matricula" />
+            <PropertyRef Name="km" />
+          </Key>
+          <Property Name="matricula" Type="String" MaxLength="16" FixedLength="false" Unicode="false" Nullable="false" />
+          <Property Name="km" Type="Int32" Nullable="false" />
+          <Property Name="valorTotal" Type="Decimal" Precision="4" Scale="2" />
+          <Property Name="data" Type="DateTime" Nullable="false" Precision="0" />
+          <NavigationProperty Name="veiculo" Relationship="Self.FK__manutenca__matri__57BF7258" FromRole="manutencao" ToRole="veiculo" />
+          <NavigationProperty Name="manutencaoItems" Relationship="Self.FK__manutencaoItem__5B90033C" FromRole="manutencao" ToRole="manutencaoItem" />
+        </EntityType>
+        <EntityType Name="manutencaoItem">
+          <Key>
+            <PropertyRef Name="matricula" />
+            <PropertyRef Name="km" />
+            <PropertyRef Name="nLinha" />
+          </Key>
+          <Property Name="matricula" Type="String" MaxLength="16" FixedLength="false" Unicode="false" Nullable="false" />
+          <Property Name="km" Type="Int32" Nullable="false" />
+          <Property Name="nLinha" Type="Int32" Nullable="false" />
+          <Property Name="valor" Type="Decimal" Precision="4" Scale="2" Nullable="false" />
+          <NavigationProperty Name="manutencao" Relationship="Self.FK__manutencaoItem__5B90033C" FromRole="manutencaoItem" ToRole="manutencao" />
+        </EntityType>
+        <EntityType Name="veiculo">
+          <Key>
+            <PropertyRef Name="matricula" />
+          </Key>
+          <Property Name="matricula" Type="String" MaxLength="16" FixedLength="false" Unicode="false" Nullable="false" />
+          <Property Name="kmActuais" Type="Int32" />
+          <Property Name="descr" Type="String" MaxLength="255" FixedLength="false" Unicode="false" Nullable="false" />
+          <NavigationProperty Name="manutencaos" Relationship="Self.FK__manutenca__matri__57BF7258" FromRole="veiculo" ToRole="manutencao" />
+        </EntityType>
+        <Association Name="FK__manutenca__matri__57BF7258">
+          <End Role="veiculo" Type="Self.veiculo" Multiplicity="1" />
+          <End Role="manutencao" Type="Self.manutencao" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="veiculo">
+              <PropertyRef Name="matricula" />
+            </Principal>
+            <Dependent Role="manutencao">
+              <PropertyRef Name="matricula" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <Association Name="FK__manutencaoItem__5B90033C">
+          <End Role="manutencao" Type="Self.manutencao" Multiplicity="1" />
+          <End Role="manutencaoItem" Type="Self.manutencaoItem" Multiplicity="*" />
+          <ReferentialConstraint>
+            <Principal Role="manutencao">
+              <PropertyRef Name="matricula" />
+              <PropertyRef Name="km" />
+            </Principal>
+            <Dependent Role="manutencaoItem">
+              <PropertyRef Name="matricula" />
+              <PropertyRef Name="km" />
+            </Dependent>
+          </ReferentialConstraint>
+        </Association>
+        <EntityContainer Name="Exame1819SV2epEntities" annotation:LazyLoadingEnabled="true">
+          <EntitySet Name="manutencaos" EntityType="Self.manutencao" />
+          <EntitySet Name="manutencaoItems" EntityType="Self.manutencaoItem" />
+          <EntitySet Name="veiculoes" EntityType="Self.veiculo" />
+          <AssociationSet Name="FK__manutenca__matri__57BF7258" Association="Self.FK__manutenca__matri__57BF7258">
+            <End Role="veiculo" EntitySet="veiculoes" />
+            <End Role="manutencao" EntitySet="manutencaos" />
+          </AssociationSet>
+          <AssociationSet Name="FK__manutencaoItem__5B90033C" Association="Self.FK__manutencaoItem__5B90033C">
+            <End Role="manutencao" EntitySet="manutencaos" />
+            <End Role="manutencaoItem" EntitySet="manutencaoItems" />
+          </AssociationSet>
+          <FunctionImport Name="insereManutencaoItem">
+            <Parameter Name="mat" Mode="In" Type="String" />
+            <Parameter Name="km" Mode="In" Type="Int32" />
+            <Parameter Name="linha" Mode="In" Type="Int32" />
+            <Parameter Name="valor" Mode="In" Type="Decimal" />
+          </FunctionImport>
+          <FunctionImport Name="insereManutencaoItem2">
+            <Parameter Name="mat" Mode="In" Type="String" />
+            <Parameter Name="km" Mode="In" Type="Int32" />
+            <Parameter Name="linha" Mode="In" Type="Int32" />
+            <Parameter Name="valor" Mode="In" Type="Decimal" />
+          </FunctionImport>
+        </EntityContainer>
+      </Schema>
+    </edmx:ConceptualModels>
+    <!-- C-S mapping content -->
+    <edmx:Mappings>
+      <Mapping Space="C-S" xmlns="http://schemas.microsoft.com/ado/2009/11/mapping/cs">
+        <EntityContainerMapping StorageEntityContainer="TrabalhoSi2ModelStoreContainer" CdmEntityContainer="Exame1819SV2epEntities">
+          <EntitySetMapping Name="manutencaos">
+            <EntityTypeMapping TypeName="TrabalhoSi2Model.manutencao">
+              <MappingFragment StoreEntitySet="manutencao">
+                <ScalarProperty Name="matricula" ColumnName="matricula" />
+                <ScalarProperty Name="km" ColumnName="km" />
+                <ScalarProperty Name="valorTotal" ColumnName="valorTotal" />
+                <ScalarProperty Name="data" ColumnName="data" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="manutencaoItems">
+            <EntityTypeMapping TypeName="TrabalhoSi2Model.manutencaoItem">
+              <MappingFragment StoreEntitySet="manutencaoItem">
+                <ScalarProperty Name="matricula" ColumnName="matricula" />
+                <ScalarProperty Name="km" ColumnName="km" />
+                <ScalarProperty Name="nLinha" ColumnName="nLinha" />
+                <ScalarProperty Name="valor" ColumnName="valor" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <EntitySetMapping Name="veiculoes">
+            <EntityTypeMapping TypeName="TrabalhoSi2Model.veiculo">
+              <MappingFragment StoreEntitySet="veiculo">
+                <ScalarProperty Name="matricula" ColumnName="matricula" />
+                <ScalarProperty Name="kmActuais" ColumnName="kmActuais" />
+                <ScalarProperty Name="descr" ColumnName="descr" />
+              </MappingFragment>
+            </EntityTypeMapping>
+          </EntitySetMapping>
+          <FunctionImportMapping FunctionImportName="insereManutencaoItem" FunctionName="TrabalhoSi2Model.Store.insereManutencaoItem" />
+          <FunctionImportMapping FunctionImportName="insereManutencaoItem2" FunctionName="TrabalhoSi2Model.Store.insereManutencaoItem2" />
+        </EntityContainerMapping>
+      </Mapping>
+    </edmx:Mappings>
+  </edmx:Runtime>
+  <!-- EF Designer content (DO NOT EDIT MANUALLY BELOW HERE) -->
+  <Designer xmlns="http://schemas.microsoft.com/ado/2009/11/edmx">
+    <Connection>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="MetadataArtifactProcessing" Value="EmbedInOutputAssembly" />
+      </DesignerInfoPropertySet>
+    </Connection>
+    <Options>
+      <DesignerInfoPropertySet>
+        <DesignerProperty Name="ValidateOnBuild" Value="true" />
+        <DesignerProperty Name="EnablePluralization" Value="true" />
+        <DesignerProperty Name="IncludeForeignKeysInModel" Value="true" />
+        <DesignerProperty Name="UseLegacyProvider" Value="false" />
+        <DesignerProperty Name="CodeGenerationStrategy" Value="None" />
+      </DesignerInfoPropertySet>
+    </Options>
+    <!-- Diagram content (shape and connector positions) -->
+    <Diagrams></Diagrams>
+  </Designer>
+</edmx:Edmx>

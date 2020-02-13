@@ -1,0 +1,129 @@
+# SI2_1819_SV_1ep
+## 2
+### a
+
+read uncommitted
+--t1a t1b
+-- exclusice lock
+tabela t
+1
+12
+
+--t2a
+--t2b -- bloqueada
+
+--t1c
+tabela t
+21
+12
+--t1.d
+--liberta lock
+
+--t2b
+tabela t
+31
+22
+
+read committed
+--t1a t1b
+-- exclusice lock
+tabela t
+1
+12
+
+--t2a
+--t2b -- bloqueada
+
+--t1c
+tabela t
+21
+12
+--t1.d
+--liberta lock
+
+--t2b
+tabela t
+31
+22
+
+
+repeatable read
+t1a
+
+t1b
+
+t2a
+
+t2b
+
+t1c
+
+t1d
+
+
+t2c
+
+serializable
+
+2.b)RODRI
+READ UNCOMMITED, READ COMMITED, REPEATABLE READ, SERIALIZABLE
+(igual para todos, o lost update acontece por causa da variavel local)
+T3   |   T4
+a    |   
+b    |   
+     |   a
+     |   b
+c    |   
+d    |   
+     |   c
+     |   d
+
+(1,1)
+(2,1002)
+
+2.c)RODRI
+READ UNCOMMITED, READ COMMITED
+T3   |   T2
+a    |   
+b    |   
+     |   a
+     |   b
+c(b) |   
+d    |   
+     |   c
+
+Funciona:
+T3   |   T2
+a    |   
+b    |   
+     |   a
+     |   b
+	 |   c
+c    |   
+d    |   
+
+(1,11)
+(2,-998)
+
+REPEATABLE READ, SERIALIZABLE
+T3   |   T2
+a    |   
+b    |   
+     |   a
+     |   b(b)
+c    |   
+d    |   
+     |   c
+
+Funciona:
+T3   |   T2
+a    |   
+b    |   
+     |   a
+c    |   
+d    | 
+     |   b
+	 |   c
+
+(1,11)
+(2,-988)

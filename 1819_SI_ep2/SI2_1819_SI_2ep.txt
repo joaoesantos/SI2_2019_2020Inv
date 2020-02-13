@@ -1,0 +1,70 @@
+- 1 -
+
+(e)
+O que é um Virtual Proxy?
+
+(f)
+
+public class Medico{
+public Medico() {...}
+public int Nome { get; set; }
+public string Genero { get; set; }
+public string Especialidade { get; set; }
+public List<Consulta> consultasDadas { get; set; }
+}
+
+public class Consulta {
+public Consulta() {...}
+public int NumConsulta { get; set; }
+public int CodMed { get; set; }
+public string NomePaciente { get; set; }
+public string Data { get; set; }
+}
+
+???
+
+
+- 2 -
+
+(a)
+REPEATABLE READ
+		T1										T2											PRINT
+1 		BEGIN TRAN;
+2 												BEGIN TRAN;
+3 												INSERT INTO Medico WHERE 
+4 												PRINT n2;									0
+5 												INSERT INTO Medico VALUES(’1’,...);
+6 		INSERT INTO Medico VALUES(’2’,...);
+7 												SELECT COUNT(*) INTO n2 FROM Medico;
+8 												PRINT n2;									1
+9 												COMMIT;
+10 		SELECT COUNT(*) INTO n1 FROM Medico;
+11 		PRINT n1;																			2
+12 		COMMIT;
+
+Como apenas existe um par de ações conflituante (6 e 7), não há ciclos e, 
+portanto, todos o escalonamento é serializável.
+
+(b)
+REPEATABLE READ
+		T1										T2									
+1 		BEGIN TRAN;
+2 												BEGIN TRAN;
+3 												SELECT * FROM Medico WHERE Nome > 5;
+4 												SELECT * FROM Medico WHERE Nome < 5;
+5		INSERT INTO Medico VALUES(100)
+6		INSERT INTO Medico VALUES(1)
+7		COMMIT									
+8												SELECT * FROM Medico WHERE Nome > 5;
+9												SELECT * FROM Medico WHERE Nome < 5;
+10												COMMIT
+
+(c)
+begin tran inserirConsulta
+insert into Consulta values (1, 1, ’John’, ’28-01-2019’)
+insert into Medico values (’1’, ’Andre’, ’M’, ’Neurologia’)
+commit
+
+R: Terminaria com sucesso, porque Consulta(CodMed) não é chave estrageira de Medico(Nome).
+
+(d)

@@ -140,6 +140,8 @@ BEGIN
 	SELECT idEv, hora
 	FROM atividade
 	WHERE descr IS NULL AND relatorio IS NULL
+
+	return 
 END
 
 1.c)

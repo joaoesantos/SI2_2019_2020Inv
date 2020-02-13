@@ -1,0 +1,182 @@
+1.a)
+CREATE TRIGGER trg_atividade ON atividade
+INSTEAD OF insert, update, delete
+AS
+BEGIN
+	DECLARE CURSOR cursI FOR SELECT idEv, hora, minuto, descr, relatorio FROM Inserted
+	DECLARE CURSOR cursD FOR SELECT idEv, hora, minuto, descr, relatorio FROM Deleted
+
+	DECLARE @idEv numeric(8) 
+	DECLARE @hora numeric(2) 
+	DECLARE @minuto numeric(2) 
+	DECLARE @descr varchar(100) 
+	DECLARE @relatorio char(3000) 
+
+	IF INSERT
+	AS
+	BEGIN
+		OPEN cursI
+		FETCH NEXT FROM cusrI INTO @idEv, @hora, @minuto, @descr, @relatorio
+		
+		WHILE(@@FETCH_STATUS = 0)
+		BEGIN
+			IF(NOT EXISTS(SELECT * FROM evento WHERE id = @idEv))
+			BEGIN
+				Raiserror('nao existe evento', 16, 1)
+			END
+			
+			IF(EXISTS(SELECT * FROM ativ1 WHERE idEv = @idEv
+			AND hora = @hora AND minuto = @minuto))
+			BEGIN
+				Raiserror('atividade 1 ja existe', 16, 2)
+			END
+			
+			IF(EXISTS(SELECT * FROM ativ2 WHERE idEv = @idEv
+			AND hora = @hora AND minuto = @minuto))
+			BEGIN
+				Raiserror('atividade 2 ja existe', 16, 3)
+			END
+			
+			INSERT INTO ativ1 (idEv, hora, minuto, descr)
+			VALUES (@idEv, @hora, @minuto, @descr)
+			
+			IF(@relatorio IS NOT NULL)
+			BEGIN
+				INSERT INTO ativ2 (idEv, hora, minuto, relatorio)
+				VALUES @idEv, @hora, @minuto, @relatorio
+			END
+			
+			FETCH NEXT FROM cusrI INTO @idEv, @hora, @minuto, @descr, @relatorio
+		END
+		CLOSE cursI
+		DEALLOCATE cursI
+	END
+	
+	IF UPDATE
+	AS
+	BEGIN
+		OPEN cursI
+		FETCH NEXT FROM cusrI INTO @idEv, @hora, @minuto, @descr, @relatorio
+		
+		WHILE(@@FETCH_STATUS = 0)
+		BEGIN
+			IF(NOT EXISTS(SELECT * FROM evento WHERE id = @idEv))
+			BEGIN
+				Raiserror('nao existe evento', 16, 1)
+			END
+			
+			IF(NOT EXISTS(SELECT * FROM ativ1 WHERE idEv = @idEv
+			AND hora = @hora AND minuto = @minuto))
+			BEGIN
+				Raiserror('atividade 1 nao existe', 16, 2)
+			END
+			
+			IF(NOT EXISTS(SELECT * FROM ativ2 WHERE idEv = @idEv
+			AND hora = @hora AND minuto = @minuto))
+			BEGIN
+				Raiserror('atividade 2 nao existe', 16, 3)
+			END
+			
+			UPDATE ativ1 SET idEv = @idEv, hora = @hora, minuto = @minuto, descr = @descr
+			
+			IF(@relatorio IS NOT NULL)
+			BEGIN
+				UPDATE ativ2 SET idEv = @idEv, hora = @hora, minuto = @minuto, relatorio = @relatorio
+			END
+			
+			FETCH NEXT FROM cusrI INTO @idEv, @hora, @minuto, @descr, @relatorio
+		END
+		CLOSE cursI
+		DEALLOCATE cursI
+	END
+	
+	IF DELETE
+	AS
+	BEGIN
+		OPEN cursD
+		FETCH NEXT FROM cusrD INTO @idEv, @hora, @minuto, @descr, @relatorio
+		
+		WHILE(@@FETCH_STATUS = 0)
+		BEGIN
+			IF(NOT EXISTS(SELECT * FROM evento WHERE id = @idEv))
+			BEGIN
+				Raiserror('nao existe evento', 16, 1)
+			END
+			
+			IF(NOT EXISTS(SELECT * FROM ativ1 WHERE idEv = @idEv
+			AND hora = @hora AND minuto = @minuto))
+			BEGIN
+				Raiserror('atividade 1 nao existe', 16, 2)
+			END
+			
+			IF(NOT EXISTS(SELECT * FROM ativ2 WHERE idEv = @idEv
+			AND hora = @hora AND minuto = @minuto))
+			BEGIN
+				Raiserror('atividade 2 nao existe', 16, 3)
+			END
+			
+			DELETE FROM ativ1
+			WHERE idEv = @idEv, hora = @hora, minuto = @minuto, descr = @descr
+			
+			IF(@relatorio IS NOT NULL)
+			BEGIN
+				DELETE FROM ativ2
+				WHERE idEv = @idEv, hora = @hora, minuto = @minuto, relatorio = @relatorio
+			END
+			
+			FETCH NEXT FROM cusrD INTO @idEv, @hora, @minuto, @descr, @relatorio
+		END
+		CLOSE cursD
+		DEALLOCATE cursD
+	END
+END
+
+1.b)
+CREATE FUNCTION ehsa ()
+RETURNS @pares TABLE(id numeric(8), hora numeric(2))
+AS
+BEGIN
+	INSERT INTO @pares (id, hora)
+	SELECT idEv, hora
+	FROM atividade
+	WHERE descr IS NULL AND relatorio IS NULL
+END
+
+1.c)
+CREATE PROC emhsa (@id numeric(8) out, @horas numeric(2) out)
+AS
+BEGIN
+	SELECT TOP(1) @id = id, @horas = hora
+	FROM dbo.ehsa()
+	ORDER BY hora DESC
+END
+
+2)
+T1                           |   T2
+select * from T              |   
+                             |   select * from T
+delete from Y where          |   
+                             |   update T set value = value +1 where t_id > 2
+                             |   insert into T values(4,4)
+                             |   COMMIT
+delete from T where t_id > 1 |   
+COMMIT                       |   
+
+3.a)
+Como so acontece uma leitura em T3 não podem ocorrer non repeatable reads nem phantoms.
+No entanto pode acontecer um dirty read se a inserção T2.c acontecer antes da leitura T3.c.
+
+3.b)
+Read Commited, como a unica anomalia possível é o dirty read o read commited impossibilita a leitura de atualizaç~pes nao commited impedido os dirty reads.
+
+4.a)
+Autenticidade - transação indidual no seu processamento
+Consistencia - transação conduz base de dados de um estado consistente para oturo estado consistente
+Isolamento - transações concorrentes nao devem interferir umas com as oturas durante a execução
+Durabilidade - resultado de transaçao valida deve ser tornado persistente (mesmo na presenca de falhas apos commit)
+
+4.b)
+
+
+4.c)
+
